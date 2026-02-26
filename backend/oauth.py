@@ -8,11 +8,17 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-CLIENT_SECRET_FILE = os.path.join(
-    BASE_DIR, "..", "data", "client_secret_589113071583-ua6c3u59nfq3md8798jb6vo637irjp34.apps.googleusercontent.com.json"
-)
+CLIENT_SECRET_FILE = os.getenv("GOOGLE_CLIENT_SECRET")
 
-REDIRECT_URI = "http://localhost:5000/oauth2callback"
+if not CLIENT_SECRET_FILE:
+    raise ValueError("GOOGLE_CLIENT_SECRET not set in .env")
+
+CLIENT_SECRET_FILE = os.path.join(BASE_DIR, "..", CLIENT_SECRET_FILE)
+
+REDIRECT_URI = os.getenv(
+    "REDIRECT_URI",
+    "http://localhost:5000/oauth2callback"
+)
 
 
 def create_flow():
@@ -21,6 +27,7 @@ def create_flow():
         scopes=SCOPES,
         redirect_uri=REDIRECT_URI
     )
+
 
 def get_auth_url():
     flow = create_flow()
