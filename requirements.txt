@@ -1,0 +1,4 @@
+groq
+dateparser
+google-auth-oauthlib
+python-dotenv
