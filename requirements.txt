@@ -1,4 +1,7 @@
-groq
-dateparser
+flask
+streamlit
+google-auth
 google-auth-oauthlib
+google-api-python-client
 python-dotenv
+flask-cors
