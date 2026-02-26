@@ -12,12 +12,17 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret")
 
 app.config.update(
-    SESSION_COOKIE_SAMESITE = "Lax",
-    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_SECURE=True
 )
 
-CORS(app, supports_credentials=True)
-
+CORS(
+    app,
+    supports_credentials=True,
+    origins=[
+        "https://orchestramail-ai-1.onrender.com"
+    ]
+)
 # 🔐 LOGIN
 @app.route("/login")
 def login():
@@ -50,7 +55,7 @@ def callback():
         save_user(user_email, token)
         session["user"] = user_email
 
-        return redirect(f"http://localhost:8501/?login=success&user={user_email}")
+        return redirect(f"https://orchestramail-ai-1.onrender.com/?login=success&user={user_email}")
 
     except Exception as e:
         return f"❌ OAuth Error: {str(e)}"
@@ -70,7 +75,7 @@ def get_current_user():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("http://localhost:8501")
+    return redirect("https://orchestramail-ai-1.onrender.com")
 
 
 if __name__ == "__main__":
