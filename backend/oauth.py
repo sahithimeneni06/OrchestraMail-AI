@@ -8,16 +8,14 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# ✅ read from .env
 CLIENT_SECRET_FILE = os.getenv("GOOGLE_CLIENT_SECRET")
 
 if not CLIENT_SECRET_FILE:
-    raise ValueError("GOOGLE_CLIENT_SECRET not set")
+    raise ValueError("GOOGLE_CLIENT_SECRET not set in .env")
 
-# ONLY join if it's a relative path (local dev)
-if not CLIENT_SECRET_FILE.startswith("/etc/secrets"):
-    CLIENT_SECRET_FILE = os.path.join(BASE_DIR, "..", CLIENT_SECRET_FILE)
-
-REDIRECT_URI="https://orchestramail-ai-1.onrender.com/oauth2callback"
+# convert to absolute path
+CLIENT_SECRET_FILE = os.path.join(BASE_DIR, "..", CLIENT_SECRET_FILE)
 
 REDIRECT_URI = os.getenv(
     "REDIRECT_URI",

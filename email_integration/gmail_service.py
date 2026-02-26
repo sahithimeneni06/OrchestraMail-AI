@@ -10,7 +10,16 @@ from backend.config import SCOPES
 
 load_dotenv()
 
-CLIENT_SECRET_FILE = "data/client_secret_589113071583-ua6c3u59nfq3md8798jb6vo637irjp34.apps.googleusercontent.com.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ✅ read from .env
+CLIENT_SECRET_FILE = os.getenv("GOOGLE_CLIENT_SECRET")
+
+if not CLIENT_SECRET_FILE:
+    raise ValueError("GOOGLE_CLIENT_SECRET not set in .env")
+
+# convert to absolute path
+CLIENT_SECRET_FILE = os.path.join(BASE_DIR, "..", CLIENT_SECRET_FILE)
 
 
 REDIRECT_URI = "http://localhost:5000/oauth2callback"
