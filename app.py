@@ -592,7 +592,7 @@ if "session" not in st.session_state:
     st.session_state.cookies = {}
 
 defaults = {
-    "page": "home" if "user" in st.session_state else "landing", "show_login": False,
+    "page": "home" if st.session_state.get("user") else "landing", "show_login": False,
     "emails": None, "generated_email": None, "ai_reply": None,
     "intent": "", "sender": "", "recipient_type": "", "recipient_name": "",
     "login_toast": False,
@@ -658,8 +658,13 @@ if not st.session_state.login_toast:
     st.session_state.login_toast = True
 
 user_raw = st.session_state.get("user")
+
+if not user_raw:
+    st.session_state.page = "landing"
+    st.stop()
+
 user_display = user_raw.split("@")[0] if "@" in user_raw else user_raw
-user_initial = user_display[0].upper() if user_display else "U"
+user_initial = user_display[0].upper()
 
 st.markdown(f"""
 <div class="nav-wrap">
