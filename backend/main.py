@@ -4,7 +4,7 @@ from backend.token_store import save_user, init_db
 from dotenv import load_dotenv
 from flask_cors import CORS
 import os
-from token_store import init_db
+from backend.token_store import init_db
 
 load_dotenv()
 

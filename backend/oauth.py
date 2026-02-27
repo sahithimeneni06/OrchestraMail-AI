@@ -2,7 +2,7 @@ import os
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
-from config import SCOPES
+from backend.config import SCOPES
 
 load_dotenv()
 
