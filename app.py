@@ -1,12 +1,6 @@
 import streamlit as st
 import time
-from email_integration.email_flows import (
-    send_new_email_flow,
-    reply_from_inbox_flow,
-    reply_using_email_flow,
-    generate_reply,
-    send_reply_flow
-)
+import requests
 st.set_page_config(
     page_title="OrchestraMail AI",
     page_icon="💌",
@@ -594,6 +588,8 @@ if "user" in st.query_params:
     st.session_state.user = user_val
     st.query_params.clear()
     st.rerun()
+if "session" not in st.session_state:
+    st.session_state.cookies = {}
 
 defaults = {
     "page": "home" if "user" in st.session_state else "landing", "show_login": False,
@@ -640,7 +636,7 @@ if "user" not in st.session_state:
     <div class="modal-tag">Intelligent Email Orchestration</div>
     <div class="modal-info">Connect Gmail to let AI agents compose, reply and manage your emails with full context awareness.</div>
     <div class="modal-div">Continue with</div>
-    <a href="{BACKEND_URL}/login" target="_self" class="g-btn">
+    <a href=""" + f'{BACKEND_URL}/login' + """ target="_self" class="g-btn">
       <div class="g-circle">G</div>
       Sign in with Google
       <span style="margin-left:auto;opacity:0.38;">→</span>
@@ -819,8 +815,25 @@ elif st.session_state.page == "new":
         if to and sender and intent and recipient_type:
             with st.spinner("AI agents drafting…"):
                 try:
-                    
-                    result = send_new_email_flow(st.session_state.user, to, intent, sender, recipient_type, recipient_name)
+                    import requests
+
+                    res = requests.post(
+                        f"{BACKEND_URL}/generate-email",
+                        json={
+                            "to": to,
+                            "intent": intent,
+                            "sender": sender,
+                            "recipient_type": recipient_type,
+                            "recipient_name": recipient_name
+                        },
+                        cookies=st.session_state.get("cookies", {})
+                    )
+
+                    if res.status_code == 200:
+                        st.session_state.generated_email = res.json()
+                    else:
+                        st.error("Failed to generate email")
+                    result = res.json()
                     st.session_state.generated_email = result
                 except Exception as e:
                     st.session_state.generated_email = {"subject": "Draft Subject", "email": f"[Draft body]\n\nNote: {e}", "to": to}
@@ -835,10 +848,21 @@ elif st.session_state.page == "new":
         body = st.text_area("Email Body", value=gen.get("email", ""), height=210, key="gen_body")
         if st.button("📤  Send Email", use_container_width=True):
             try:
-                from email_integration.email_flows import send_new_email_flow
-                send_new_email_flow(st.session_state.user, gen["to"], st.session_state.intent,
-                                    st.session_state.sender, st.session_state.recipient_type,
-                                    st.session_state.recipient_name, subject_override=subject, send=True)
+                res = requests.post(
+                    f"{BACKEND_URL}/send-email",
+                    json={
+                        "to": gen["to"],
+                        "subject": subject,
+                        "body": body
+                    },
+                    cookies=st.session_state.get("cookies", {})
+                )
+
+                if res.status_code == 200:
+                    st.markdown("<div class='msg-ok'>✦ Email sent!</div>", unsafe_allow_html=True)
+                else:
+                    st.error("Send failed")
+                result = res.json()
             except: pass
             st.markdown("<div class='msg-ok'>✦ Email sent!</div>", unsafe_allow_html=True)
             st.session_state.generated_email = None
@@ -864,15 +888,26 @@ elif st.session_state.page == "inbox":
                 with st.spinner("Loading…"):
                     try:
                         
-                        st.session_state.emails = reply_using_email_flow(st.session_state.user, search_email, 100)
+                        st.session_state.emails = res = requests.get(
+                            f"{BACKEND_URL}/inbox",
+                            cookies=st.session_state.get("cookies", {})
+                        )
+
+                        st.session_state.emails = res.json()
                     except: st.session_state.emails = []
                 st.markdown("<div class='msg-ok'>✦ Loaded</div>", unsafe_allow_html=True)
     with b2:
         if st.button("📨 Load 100 Latest", use_container_width=True):
             with st.spinner("Fetching inbox…"):
                 try:
-                    from email_integration.email_flows import reply_from_inbox_flow
-                    st.session_state.emails = reply_from_inbox_flow(st.session_state.user, 100)
+                    
+                    st.session_state.emails = res = requests.post(
+                        f"{BACKEND_URL}/search",
+                        json={"email": search_email},
+                        cookies=st.session_state.get("cookies", {})
+                    )
+
+                    st.session_state.emails = res.json()
                 except: st.session_state.emails = []
             st.markdown("<div class='msg-ok'>✦ Inbox loaded</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -898,8 +933,20 @@ elif st.session_state.page == "inbox":
             if ri and rs and rt:
                 with st.spinner("Generating…"):
                     try:
-                        from email_integration.email_flows import generate_reply
-                        st.session_state.ai_reply = generate_reply(selected_email=sel, user_intent=ri, sender_name=rs, recipient_type=rt, recipient_name=rn)
+                        
+                        st.session_state.ai_reply = res = requests.post(
+                            f"{BACKEND_URL}/generate-reply",
+                            json={
+                                "selected_email": sel,
+                                "intent": ri,
+                                "sender": rs,
+                                "recipient_type": rt,
+                                "recipient_name": rn
+                            },
+                            cookies=st.session_state.get("cookies", {})
+                        )
+
+                        st.session_state.ai_reply = res.json()
                     except Exception as e:
                         st.session_state.ai_reply = {"subject":"Re: "+sel.get("subject",""),"email":f"[Reply]\n{e}","to":sel.get("from","")}
                 st.markdown("<div class='msg-ok'>✦ Reply generated</div>", unsafe_allow_html=True)
@@ -911,9 +958,18 @@ elif st.session_state.page == "inbox":
             rb2 = st.text_area("Reply Body", value=rep.get("email",""), height=200, key="i_rbody")
             if st.button("📤  Send Reply", use_container_width=True, key="i_send"):
                 try:
-                    from email_integration.email_flows import send_reply_flow
+                    
                     rep["subject"] = rs2; rep["email"] = rb2
-                    send_reply_flow(st.session_state.user, rep)
+                    res = requests.post(
+                        f"{BACKEND_URL}/send-reply",
+                        json=rep,
+                        cookies=st.session_state.get("cookies", {})
+                    )
+
+                    if res.status_code == 200:
+                        st.markdown("<div class='msg-ok'>✦ Reply sent!</div>", unsafe_allow_html=True)
+                    else:
+                        st.error("Reply failed")
                 except: pass
                 st.markdown("<div class='msg-ok'>✦ Reply sent!</div>", unsafe_allow_html=True)
                 st.session_state.ai_reply = None
