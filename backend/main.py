@@ -12,11 +12,16 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret")
 
 app.config.update(
-    SESSION_COOKIE_SAMESITE = "Lax",
-    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
+    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
 )
 
-CORS(app, supports_credentials=True)
+CORS(
+    app,
+    supports_credentials=True,
+    origins=[os.getenv("FRONTEND_URL", "http://localhost:8501")]
+)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
 
 # 🔐 LOGIN
 @app.route("/login")
@@ -49,8 +54,8 @@ def callback():
 
         save_user(user_email, token)
         session["user"] = user_email
-
-        return redirect(f"http://localhost:8501/?login=success&user={user_email}")
+        
+        return redirect(f"{FRONTEND_URL}/?login=success&user={user_email}")
 
     except Exception as e:
         return f"❌ OAuth Error: {str(e)}"
@@ -70,7 +75,7 @@ def get_current_user():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("http://localhost:8501")
+    return redirect(FRONTEND_URL)
 
 
 if __name__ == "__main__":
