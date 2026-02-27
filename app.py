@@ -13,6 +13,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+import os
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 
 st.markdown("""
 <style>
@@ -576,6 +578,9 @@ st.markdown("""
 if "user" not in st.session_state:
     st.session_state.user = None
 
+if "page" not in st.session_state:
+    st.session_state.page = "landing"
+
 if "login_toast" not in st.session_state:
     st.session_state.login_toast = False
 
@@ -635,7 +640,7 @@ if "user" not in st.session_state:
     <div class="modal-tag">Intelligent Email Orchestration</div>
     <div class="modal-info">Connect Gmail to let AI agents compose, reply and manage your emails with full context awareness.</div>
     <div class="modal-div">Continue with</div>
-    <a href="http://localhost:5000/login" target="_self" class="g-btn">
+    <a href="{BACKEND_URL}/login" target="_self" class="g-btn">
       <div class="g-circle">G</div>
       Sign in with Google
       <span style="margin-left:auto;opacity:0.38;">→</span>
@@ -988,7 +993,6 @@ st.markdown("<br>", unsafe_allow_html=True)
 _, lc, _ = st.columns([4, 1, 4])
 with lc:
     if st.button("⎋  Sign Out", key="logout", use_container_width=True):
-        import webbrowser
-        webbrowser.open("http://localhost:5000/logout")
+        st.link_button("⎋  Sign Out", f"{BACKEND_URL}/logout", use_container_width=True)
         st.session_state.clear()
         st.rerun()
