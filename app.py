@@ -573,6 +573,12 @@ st.markdown("""
 <div class="bg-noise"></div>
 """, unsafe_allow_html=True)
 
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+if "login_toast" not in st.session_state:
+    st.session_state.login_toast = False
+
 query_params = st.query_params
 if "user" in st.query_params:
     user_val = st.query_params["user"]
@@ -650,7 +656,7 @@ if not st.session_state.login_toast:
     st.toast("✦ Signed in!", icon="💌")
     st.session_state.login_toast = True
 
-user_raw = str(st.session_state.user)
+user_raw = st.session_state.get("user")
 user_display = user_raw.split("@")[0] if "@" in user_raw else user_raw
 user_initial = user_display[0].upper() if user_display else "U"
 

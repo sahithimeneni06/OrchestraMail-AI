@@ -1,6 +1,6 @@
 from flask import Flask, redirect, request, session, jsonify
-from oauth import get_auth_url, get_token
-from token_store import save_user
+from backend.oauth import get_auth_url, get_token
+from backend.token_store import save_user, init_db
 from dotenv import load_dotenv
 from flask_cors import CORS
 import os
@@ -22,6 +22,7 @@ CORS(
     origins=[os.getenv("FRONTEND_URL", "http://localhost:8501")]
 )
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
+
 
 # 🔐 LOGIN
 @app.route("/login")
