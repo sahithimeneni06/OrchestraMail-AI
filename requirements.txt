@@ -8,3 +8,4 @@ google-auth-oauthlib
 groq
 requests
 gunicorn
+dateparser
