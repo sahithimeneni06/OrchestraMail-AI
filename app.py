@@ -1221,5 +1221,6 @@ with lc:
             backend.get(f"{BACKEND_URL}/logout")
         except:
             pass
+        backend.headers.pop("X-User-Email", None)
         st.session_state.clear()
         st.rerun()

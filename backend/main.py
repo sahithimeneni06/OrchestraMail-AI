@@ -71,11 +71,12 @@ def login():
     auth_url, state, code_verifier = get_auth_url()
 
     if state is None:
-        return auth_url
+        # auth_url contains the error message in this case
+        return f"OAuth configuration error: {auth_url}", 500
 
     session["state"] = state
-    session["code_verifier"] = code_verifier
-    session.permanent = True   # FIX 6b: make session use PERMANENT_SESSION_LIFETIME
+    session["code_verifier"] = code_verifier  # None for non-PKCE flow, kept for compat
+    session.permanent = True
 
     return redirect(auth_url)
 
@@ -90,19 +91,22 @@ def callback():
         if not code:
             return "No authorization code received", 400
 
-        if state != session.get("state"):
-            return "State mismatch", 400
+        # Only check state if we stored one (non-PKCE flow always stores state)
+        stored_state = session.get("state")
+        if stored_state and state != stored_state:
+            return "State mismatch — possible CSRF attack", 400
 
         from backend.oauth import get_token
+        # code_verifier is None for non-PKCE; get_token accepts it gracefully
         token = get_token(code, session.get("code_verifier"))
         user_email = token["email"]
 
         save_user(user_email, token)
-        # No Flask session needed — frontend identifies itself via X-User-Email header.
-        # The email is passed back to Streamlit via the redirect URL.
         return redirect(f"{FRONTEND_URL}/?login=success&user={user_email}")
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return f"OAuth Error: {str(e)}", 500
 
 
@@ -121,7 +125,8 @@ def get_current_user():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(FRONTEND_URL)
+    # Called by Python (requests.Session), not the browser — return JSON not redirect
+    return jsonify({"status": "logged out"})
 
 
 # GENERATE EMAIL
@@ -138,7 +143,7 @@ def generate_email():
     try:
         result = send_new_email_flow(
             user_email=user,
-            to=data["to"],
+            to_email=data["to"],
             user_intent=data["intent"],
             sender_name=data["sender"],
             recipient_type=data["recipient_type"],
@@ -164,7 +169,7 @@ def send_email():
     try:
         send_new_email_flow(
             user_email=user,
-            to=data["to"],
+            to_email=data["to"],
             subject_override=data["subject"],
             body_override=data["body"],
             send=True
@@ -260,4 +265,4 @@ def send_reply():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)  
+    app.run(host="0.0.0.0", port=5000, debug=False) 
