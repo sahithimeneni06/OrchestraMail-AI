@@ -226,4 +226,4 @@ def send_reply():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)  # FIX 7: debug=False in prod
+    app.run(host="0.0.0.0", port=5000, debug=False)  
