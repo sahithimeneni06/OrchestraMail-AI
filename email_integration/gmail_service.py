@@ -11,9 +11,7 @@ from backend.config import SCOPES
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# ✅ read from .env
-CLIENT_SECRET_FILE = os.getenv("GOOGLE_CLIENT_SECRET")
+CLIENT_SECRET_FILE = os.path.join(BASE_DIR, "data", "client_secret.json")
 
 if not CLIENT_SECRET_FILE:
     raise ValueError("GOOGLE_CLIENT_SECRET not set in .env")
