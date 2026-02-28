@@ -11,10 +11,6 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret")
 
-@app.before_first_request
-def startup():
-    init_db()
-
 app.config.update(
     SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
     SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
@@ -23,16 +19,18 @@ app.config.update(
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL])
 
 db_initialized = False
-@app.route("/")
-def health():
-    global db_initialized
 
+@app.before_request
+def ensure_db():
+    global db_initialized
     if not db_initialized:
         init_db()
         db_initialized = True
 
-    return "Backend running ✅"
 
+@app.route("/")
+def health():
+    return "Backend running ✅"
 
 def require_login():
     user = session.get("user")
