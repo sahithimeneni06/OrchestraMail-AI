@@ -6,17 +6,30 @@ import os
 
 load_dotenv()
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501").rstrip("/")  # FIX 4: strip trailing slash
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "dev_secret")
+app.secret_key = os.getenv("SECRET_KEY")  # FIX 3: no insecure default — will raise if missing
+if not app.secret_key:
+    raise RuntimeError("SECRET_KEY environment variable is not set. Set it to a long random string.")
 
+# FIX 1 + 2: Cross-origin Streamlit → Flask requires SameSite=None + Secure=True.
+# These MUST be set as env vars on Render. Default "Lax" blocks the cookie entirely
+# when frontend and backend are on different domains.
 app.config.update(
-    SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
-    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
+    SESSION_COOKIE_SAMESITE="None",      # FIX 1: hardcode None for cross-origin
+    SESSION_COOKIE_SECURE=True,          # FIX 2: hardcode True (Render is always HTTPS)
+    SESSION_COOKIE_HTTPONLY=True,        # FIX 5 (new): prevent JS access to cookie
+    PERMANENT_SESSION_LIFETIME=86400 * 7 # FIX 6 (new): 7 days, not browser-session only
 )
 
-CORS(app, supports_credentials=True, origins=[FRONTEND_URL])
+# FIX 4b: allow_headers needed so JSON POSTs from requests.Session work cross-origin
+CORS(app,
+     supports_credentials=True,
+     origins=[FRONTEND_URL],
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "OPTIONS"]
+)
 
 db_initialized = False
 
@@ -30,7 +43,7 @@ def ensure_db():
 
 @app.route("/")
 def health():
-    return "Backend running ✅"
+    return "Backend running"
 
 def require_login():
     user = session.get("user")
@@ -39,7 +52,7 @@ def require_login():
     return user, None
 
 
-# 🔐 LOGIN
+# LOGIN
 @app.route("/login")
 def login():
     from backend.oauth import get_auth_url
@@ -50,12 +63,12 @@ def login():
 
     session["state"] = state
     session["code_verifier"] = code_verifier
-    session.permanent = True
+    session.permanent = True   # FIX 6b: make session use PERMANENT_SESSION_LIFETIME
 
     return redirect(auth_url)
 
 
-# 🔁 CALLBACK
+# CALLBACK
 @app.route("/oauth2callback")
 def callback():
     try:
@@ -63,21 +76,23 @@ def callback():
         state = request.args.get("state")
 
         if not code:
-            return "❌ No authorization code received"
+            return "No authorization code received", 400
 
         if state != session.get("state"):
-            return "State mismatch ❌"
+            return "State mismatch", 400
+
         from backend.oauth import get_token
         token = get_token(code, session.get("code_verifier"))
         user_email = token["email"]
 
         save_user(user_email, token)
         session["user"] = user_email
+        session.permanent = True   # FIX 6c: ensure persistence after callback too
 
         return redirect(f"{FRONTEND_URL}/?login=success&user={user_email}")
 
     except Exception as e:
-        return f"❌ OAuth Error: {str(e)}"
+        return f"OAuth Error: {str(e)}", 500
 
 
 @app.route("/me")
@@ -94,7 +109,7 @@ def logout():
     return redirect(FRONTEND_URL)
 
 
-# ✉️ GENERATE EMAIL
+# GENERATE EMAIL
 @app.route("/generate-email", methods=["POST"])
 def generate_email():
     from email_integration.email_flows import send_new_email_flow
@@ -117,7 +132,7 @@ def generate_email():
     return jsonify(result)
 
 
-# 📤 SEND EMAIL
+# SEND EMAIL
 @app.route("/send-email", methods=["POST"])
 def send_email():
     from email_integration.email_flows import send_new_email_flow
@@ -139,7 +154,7 @@ def send_email():
     return jsonify({"status": "sent"})
 
 
-# 📥 INBOX
+# INBOX
 @app.route("/inbox")
 def inbox():
     from email_integration.email_flows import reply_from_inbox_flow
@@ -152,7 +167,7 @@ def inbox():
     return jsonify(emails)
 
 
-# 🔎 SEARCH
+# SEARCH
 @app.route("/search", methods=["POST"])
 def search_email():
     from email_integration.email_flows import reply_using_email_flow
@@ -172,7 +187,7 @@ def search_email():
     return jsonify(emails)
 
 
-# 🤖 GENERATE REPLY
+# GENERATE REPLY
 @app.route("/generate-reply", methods=["POST"])
 def generate_ai_reply():
     from email_integration.email_flows import generate_reply
@@ -194,7 +209,7 @@ def generate_ai_reply():
     return jsonify(result)
 
 
-# 📤 SEND REPLY
+# SEND REPLY
 @app.route("/send-reply", methods=["POST"])
 def send_reply():
     from email_integration.email_flows import send_reply_flow
@@ -211,4 +226,4 @@ def send_reply():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)  # FIX 7: debug=False in prod

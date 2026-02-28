@@ -11,9 +11,29 @@ import os
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 
 # ── PERSISTENT SESSION: carries cookies across all backend calls ──
+# requests.Session() persists cookies across calls within the same
+# Streamlit session. The `if` guard means it is created exactly once
+# and survives page reruns.
 if "backend" not in st.session_state:
     st.session_state.backend = requests.Session()
 backend = st.session_state.backend
+
+# ── RE-HYDRATE FLASK COOKIE if session object was just created ──
+# When Streamlit server restarts, st.session_state is wiped so a new
+# requests.Session() is created with no cookies. If the user was already
+# logged in, call /me immediately so Flask sets the cookie in the fresh
+# session object — otherwise every API call returns 401.
+if "backend_cookie_loaded" not in st.session_state:
+    st.session_state.backend_cookie_loaded = True
+    try:
+        _me = backend.get(f"{BACKEND_URL}/me", timeout=4)
+        if _me.ok:
+            _me_data = _me.json()
+            if _me_data.get("email") and not st.session_state.get("user"):
+                st.session_state.user = _me_data["email"]
+                st.session_state.page = "home"
+    except Exception:
+        pass  # Backend unreachable on startup — safe to ignore
 
 st.markdown("""
 <style>
@@ -587,6 +607,11 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # ── HANDLE OAUTH REDIRECT: ?user=email ──
+# After Google OAuth, Flask redirects back here with ?user=email
+# We MUST call /me through the persistent session so Flask's session
+# cookie gets captured by the requests.Session object. Without this
+# call every subsequent backend request arrives with no cookie and
+# Flask returns 401 even though the UI shows the user as logged in.
 if "user" in st.query_params:
     user_val = st.query_params["user"]
     if isinstance(user_val, list):
@@ -594,6 +619,20 @@ if "user" in st.query_params:
     st.session_state.user = user_val
     st.session_state.page = "home"
     st.query_params.clear()
+
+    # ⭐ CRITICAL: call /me via the session to capture the Flask cookie
+    try:
+        me_res = backend.get(f"{BACKEND_URL}/me")
+        if me_res.ok:
+            me_data = me_res.json()
+            # Use email confirmed by backend (most reliable source)
+            if me_data.get("email"):
+                st.session_state.user = me_data["email"]
+        # If /me fails, the user_val from the redirect is still set above
+        # so the UI remains usable; they'll get 401 on first API call
+    except Exception:
+        pass  # Network error — proceed, safe_fetch_list will catch 401s
+
     st.rerun()
 
 # ── HANDLE NAV PARAM ──
