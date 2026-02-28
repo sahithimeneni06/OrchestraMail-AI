@@ -37,12 +37,15 @@ def require_login():
 
 @app.route("/login")
 def login():
-    auth_url, state = get_auth_url()
+    auth_url, state, code_verifier = get_auth_url()
 
     if state is None:
-        return auth_url   
+        return auth_url
+
     session["state"] = state
+    session["code_verifier"] = code_verifier
     session.permanent = True
+
     return redirect(auth_url)
 
 @app.route("/oauth2callback")
@@ -57,7 +60,7 @@ def callback():
         if state != session.get("state"):
             return "State mismatch ❌"
 
-        token = get_token(code)
+        token = get_token(code, session.get("code_verifier"))
         user_email = token["email"]
 
         save_user(user_email, token)
