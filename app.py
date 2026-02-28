@@ -10,6 +10,11 @@ st.set_page_config(
 import os
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 
+# ── PERSISTENT SESSION: carries cookies across all backend calls ──
+if "backend" not in st.session_state:
+    st.session_state.backend = requests.Session()
+backend = st.session_state.backend
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
@@ -576,7 +581,6 @@ defaults = {
     "recipient_type": "",
     "recipient_name": "",
     "login_toast": False,
-    "cookies": {},
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -846,7 +850,7 @@ elif st.session_state.page == "new":
         if to and sender and intent and recipient_type:
             with st.spinner("AI agents drafting…"):
                 try:
-                    res = requests.post(
+                    res = backend.post(
                         f"{BACKEND_URL}/generate-email",
                         json={
                             "to": to,
@@ -854,8 +858,7 @@ elif st.session_state.page == "new":
                             "sender": sender,
                             "recipient_type": recipient_type,
                             "recipient_name": recipient_name
-                        },
-                        cookies=st.session_state.get("cookies", {})
+                        }
                     )
                     if res.status_code == 401:
                         st.warning("⚠ Session expired. Please sign out and sign in again.")
@@ -885,10 +888,9 @@ elif st.session_state.page == "new":
         body = st.text_area("Email Body", value=gen.get("email", ""), height=210, key="gen_body")
         if st.button("📤  Send Email", use_container_width=True):
             try:
-                res = requests.post(
+                res = backend.post(
                     f"{BACKEND_URL}/send-email",
-                    json={"to": gen["to"], "subject": subject, "body": body},
-                    cookies=st.session_state.get("cookies", {})
+                    json={"to": gen["to"], "subject": subject, "body": body}
                 )
                 if res.status_code == 401:
                     st.warning("⚠ Session expired. Please sign out and sign in again.")
@@ -922,10 +924,9 @@ elif st.session_state.page == "inbox":
             if search_email:
                 with st.spinner("Loading…"):
                     try:
-                        res = requests.post(
+                        res = backend.post(
                             f"{BACKEND_URL}/search",
-                            json={"email": search_email},
-                            cookies=st.session_state.get("cookies", {})
+                            json={"email": search_email}
                         )
                         # ✅ SAFE: validate list before storing
                         st.session_state.emails = safe_fetch_list(res)
@@ -941,9 +942,8 @@ elif st.session_state.page == "inbox":
         if st.button("📨 Load 100 Latest", use_container_width=True):
             with st.spinner("Fetching inbox…"):
                 try:
-                    res = requests.get(
-                        f"{BACKEND_URL}/inbox",
-                        cookies=st.session_state.get("cookies", {})
+                    res = backend.get(
+                        f"{BACKEND_URL}/inbox"
                     )
                     # ✅ SAFE: validate list before storing
                     st.session_state.emails = safe_fetch_list(res)
@@ -991,7 +991,7 @@ elif st.session_state.page == "inbox":
                 if ri and rs and rt:
                     with st.spinner("Generating…"):
                         try:
-                            res = requests.post(
+                            res = backend.post(
                                 f"{BACKEND_URL}/generate-reply",
                                 json={
                                     "selected_email": sel,
@@ -999,8 +999,7 @@ elif st.session_state.page == "inbox":
                                     "sender": rs,
                                     "recipient_type": rt,
                                     "recipient_name": rn
-                                },
-                                cookies=st.session_state.get("cookies", {})
+                                }
                             )
                             if res.status_code == 401:
                                 st.warning("⚠ Session expired. Please sign out and sign in again.")
@@ -1031,10 +1030,9 @@ elif st.session_state.page == "inbox":
                     try:
                         rep["subject"] = rs2
                         rep["email"] = rb2
-                        res = requests.post(
+                        res = backend.post(
                             f"{BACKEND_URL}/send-reply",
-                            json=rep,
-                            cookies=st.session_state.get("cookies", {})
+                            json=rep
                         )
                         if res.status_code == 401:
                             st.warning("⚠ Session expired. Please sign out and sign in again.")
@@ -1069,10 +1067,9 @@ elif st.session_state.page == "reply":
         if target:
             with st.spinner("Loading…"):
                 try:
-                    res = requests.post(
+                    res = backend.post(
                         f"{BACKEND_URL}/search",
-                        json={"email": target},
-                        cookies=st.session_state.get("cookies", {})
+                        json={"email": target}
                     )
                     # ✅ SAFE: validate list before storing
                     st.session_state.emails = safe_fetch_list(res)
@@ -1122,7 +1119,7 @@ elif st.session_state.page == "reply":
                 if ri and rs and rt:
                     with st.spinner("Generating…"):
                         try:
-                            res = requests.post(
+                            res = backend.post(
                                 f"{BACKEND_URL}/generate-reply",
                                 json={
                                     "selected_email": sel,
@@ -1130,8 +1127,7 @@ elif st.session_state.page == "reply":
                                     "sender": rs,
                                     "recipient_type": rt,
                                     "recipient_name": rn
-                                },
-                                cookies=st.session_state.get("cookies", {})
+                                }
                             )
                             if res.status_code == 401:
                                 st.warning("⚠ Session expired. Please sign out and sign in again.")
@@ -1162,10 +1158,9 @@ elif st.session_state.page == "reply":
                     try:
                         rep["subject"] = rs2
                         rep["email"] = rb2
-                        res = requests.post(
+                        res = backend.post(
                             f"{BACKEND_URL}/send-reply",
-                            json=rep,
-                            cookies=st.session_state.get("cookies", {})
+                            json=rep
                         )
                         if res.status_code == 401:
                             st.warning("⚠ Session expired. Please sign out and sign in again.")
@@ -1188,7 +1183,7 @@ _, lc, _ = st.columns([4, 1, 4])
 with lc:
     if st.button("⎋  Sign Out", key="logout", use_container_width=True):
         try:
-            requests.get(f"{BACKEND_URL}/logout", cookies=st.session_state.get("cookies", {}))
+            backend.get(f"{BACKEND_URL}/logout")
         except:
             pass
         st.session_state.clear()
