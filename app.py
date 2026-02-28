@@ -742,6 +742,17 @@ with n4:
     if st.button("↩ Reply", key="nav_reply"): st.session_state.page = "reply"; st.rerun()
 st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
 
+# ── TEMPORARY DEBUG BAR (remove after confirming auth works) ──
+with st.expander("🔧 Debug Auth", expanded=False):
+    st.code(f"User in state: {st.session_state.get('user')}")
+    st.code(f"Header set: {backend.headers.get('X-User-Email')}")
+    if st.button("Check /debug endpoint", key="dbg_check"):
+        try:
+            r = backend.get(f"{BACKEND_URL}/debug")
+            st.json(r.json())
+        except Exception as e:
+            st.error(str(e))
+
 # ════════════════════════════════════════════════════════════
 # HOME
 # ════════════════════════════════════════════════════════════
@@ -1221,6 +1232,7 @@ with lc:
             backend.get(f"{BACKEND_URL}/logout")
         except:
             pass
+        # Clear the auth header from the session object before wiping state
         backend.headers.pop("X-User-Email", None)
         st.session_state.clear()
         st.rerun()

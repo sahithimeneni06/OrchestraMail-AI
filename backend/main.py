@@ -41,26 +41,55 @@ def ensure_db():
         init_db()
         db_initialized = True
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Catch ALL unhandled exceptions and return JSON with full traceback.
+    This replaces Flask's default HTML 500 page so Streamlit can show
+    the real error message."""
+    traceback.print_exc()
+    return jsonify({
+        "error": str(e),
+        "type": type(e).__name__,
+        "trace": traceback.format_exc()
+    }), 500
+
+@app.errorhandler(500)
+def handle_500(e):
+    traceback.print_exc()
+    return jsonify({
+        "error": str(e),
+        "type": "InternalServerError",
+        "trace": traceback.format_exc()
+    }), 500
+
 
 @app.route("/")
 def health():
     return "Backend running"
 
+@app.route("/debug")
+def debug():
+    """Call this from Streamlit to verify the X-User-Email header is arriving."""
+    from backend.token_store import get_user
+    email = request.headers.get("X-User-Email")
+    has_token = bool(get_user(email)) if email else False
+    return jsonify({
+        "x_user_email": email,
+        "has_token_in_db": has_token,
+        "session_user": session.get("user"),
+    })
+
 def require_login():
     """
     Identify the caller from the X-User-Email header sent by Streamlit.
-    Flask session cookies cannot work here because the OAuth flow runs in
-    the browser while all API calls are made by Python (requests.Session),
-    which is a completely separate HTTP client that never receives browser
-    cookies. Passing the email as a header is the correct pattern.
     """
-    user = request.headers.get("X-User-Email") or request.json and request.json.get("_user_email")
+    user = request.headers.get("X-User-Email")
     if not user:
-        return None, (jsonify({"error": "Not logged in"}), 401)
+        return None, (jsonify({"error": "Not logged in — X-User-Email header missing"}), 401)
     # Verify this email actually has a token in our DB (prevents spoofing)
     from backend.token_store import get_user
     if not get_user(user):
-        return None, (jsonify({"error": "Not logged in"}), 401)
+        return None, (jsonify({"error": f"No token found for {user}. Please log in again."}), 401)
     return user, None
 
 
@@ -265,4 +294,4 @@ def send_reply():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False) 
+    app.run(host="0.0.0.0", port=5000, debug=False)  
