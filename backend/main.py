@@ -26,9 +26,7 @@ app.config.update(
 CORS(
     app,
     supports_credentials=True,
-    origins=[
-        FRONTEND_URL
-    ]
+    origins=[FRONTEND_URL]
 )
 
 @app.route("/")
@@ -40,6 +38,7 @@ def require_login():
     if not user:
         return None, (jsonify({"error": "Not logged in"}), 401)
     return user, None
+
 # 🔐 LOGIN
 @app.route("/login")
 def login():
@@ -104,25 +103,6 @@ def generate_email():
 
     return jsonify(result)
 
-@app.route("/generate-email", methods=["POST"])
-def generate_email():
-    user, err = require_login()
-    if err:
-        return err
-
-    data = request.json
-
-    result = send_new_email_flow(
-        user_email=user,
-        to=data["to"],
-        user_intent=data["intent"],
-        sender_name=data["sender"],
-        recipient_type=data["recipient_type"],
-        recipient_name=data.get("recipient_name", "")
-    )
-
-    return jsonify(result)
-
 @app.route("/send-email", methods=["POST"])
 def send_email():
     user, err = require_login()
@@ -134,7 +114,7 @@ def send_email():
     send_new_email_flow(
         user_email=user,
         to=data["to"],
-        user_intent="",   # already generated
+        user_intent="",
         sender_name="",
         recipient_type="",
         recipient_name="",
@@ -145,7 +125,6 @@ def send_email():
 
     return jsonify({"status": "sent"})
 
-
 @app.route("/inbox", methods=["GET"])
 def inbox():
     user, err = require_login()
@@ -155,7 +134,6 @@ def inbox():
     emails = reply_from_inbox_flow(user, 100)
 
     return jsonify(emails)
-
 
 @app.route("/search", methods=["POST"])
 def search_email():
@@ -202,7 +180,6 @@ def send_reply():
     send_reply_flow(user, data)
 
     return jsonify({"status": "reply sent"})
-
 
 
 if __name__ == "__main__":
