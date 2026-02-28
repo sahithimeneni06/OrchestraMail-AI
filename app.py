@@ -10,30 +10,25 @@ st.set_page_config(
 import os
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 
-# ── PERSISTENT SESSION: carries cookies across all backend calls ──
-# requests.Session() persists cookies across calls within the same
-# Streamlit session. The `if` guard means it is created exactly once
-# and survives page reruns.
+# ── PERSISTENT BACKEND SESSION ──
+# requests.Session() is created once and reused across all Streamlit reruns.
+# IMPORTANT: Flask session cookies cannot work here. The OAuth flow runs in
+# the browser; Python's requests.Session is a completely separate HTTP client
+# that never receives browser cookies. Instead, we identify every request by
+# injecting the user's email in an X-User-Email header, which Flask reads
+# directly. This is set/updated via update_backend_auth() below.
 if "backend" not in st.session_state:
     st.session_state.backend = requests.Session()
 backend = st.session_state.backend
 
-# ── RE-HYDRATE FLASK COOKIE if session object was just created ──
-# When Streamlit server restarts, st.session_state is wiped so a new
-# requests.Session() is created with no cookies. If the user was already
-# logged in, call /me immediately so Flask sets the cookie in the fresh
-# session object — otherwise every API call returns 401.
-if "backend_cookie_loaded" not in st.session_state:
-    st.session_state.backend_cookie_loaded = True
-    try:
-        _me = backend.get(f"{BACKEND_URL}/me", timeout=4)
-        if _me.ok:
-            _me_data = _me.json()
-            if _me_data.get("email") and not st.session_state.get("user"):
-                st.session_state.user = _me_data["email"]
-                st.session_state.page = "home"
-    except Exception:
-        pass  # Backend unreachable on startup — safe to ignore
+def update_backend_auth(email: str):
+    """Set X-User-Email header on the shared session so every future
+    request is automatically authenticated."""
+    backend.headers.update({"X-User-Email": email})
+
+# If user is already known (e.g. page rerun), keep the header in sync
+if st.session_state.get("user"):
+    update_backend_auth(st.session_state.user)
 
 st.markdown("""
 <style>
@@ -607,11 +602,9 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # ── HANDLE OAUTH REDIRECT: ?user=email ──
-# After Google OAuth, Flask redirects back here with ?user=email
-# We MUST call /me through the persistent session so Flask's session
-# cookie gets captured by the requests.Session object. Without this
-# call every subsequent backend request arrives with no cookie and
-# Flask returns 401 even though the UI shows the user as logged in.
+# After Google OAuth, Flask redirects here with ?user=email
+# Store the email and immediately set it as the auth header so all
+# subsequent backend calls are authenticated.
 if "user" in st.query_params:
     user_val = st.query_params["user"]
     if isinstance(user_val, list):
@@ -619,20 +612,7 @@ if "user" in st.query_params:
     st.session_state.user = user_val
     st.session_state.page = "home"
     st.query_params.clear()
-
-    # ⭐ CRITICAL: call /me via the session to capture the Flask cookie
-    try:
-        me_res = backend.get(f"{BACKEND_URL}/me")
-        if me_res.ok:
-            me_data = me_res.json()
-            # Use email confirmed by backend (most reliable source)
-            if me_data.get("email"):
-                st.session_state.user = me_data["email"]
-        # If /me fails, the user_val from the redirect is still set above
-        # so the UI remains usable; they'll get 401 on first API call
-    except Exception:
-        pass  # Network error — proceed, safe_fetch_list will catch 401s
-
+    update_backend_auth(user_val)  # ⭐ set X-User-Email header immediately
     st.rerun()
 
 # ── HANDLE NAV PARAM ──

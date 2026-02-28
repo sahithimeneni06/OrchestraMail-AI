@@ -46,8 +46,19 @@ def health():
     return "Backend running"
 
 def require_login():
-    user = session.get("user")
+    """
+    Identify the caller from the X-User-Email header sent by Streamlit.
+    Flask session cookies cannot work here because the OAuth flow runs in
+    the browser while all API calls are made by Python (requests.Session),
+    which is a completely separate HTTP client that never receives browser
+    cookies. Passing the email as a header is the correct pattern.
+    """
+    user = request.headers.get("X-User-Email") or request.json and request.json.get("_user_email")
     if not user:
+        return None, (jsonify({"error": "Not logged in"}), 401)
+    # Verify this email actually has a token in our DB (prevents spoofing)
+    from backend.token_store import get_user
+    if not get_user(user):
         return None, (jsonify({"error": "Not logged in"}), 401)
     return user, None
 
@@ -86,9 +97,8 @@ def callback():
         user_email = token["email"]
 
         save_user(user_email, token)
-        session["user"] = user_email
-        session.permanent = True   # FIX 6c: ensure persistence after callback too
-
+        # No Flask session needed — frontend identifies itself via X-User-Email header.
+        # The email is passed back to Streamlit via the redirect URL.
         return redirect(f"{FRONTEND_URL}/?login=success&user={user_email}")
 
     except Exception as e:
@@ -97,9 +107,13 @@ def callback():
 
 @app.route("/me")
 def get_current_user():
-    user = session.get("user")
+    # /me is called by Streamlit right after the OAuth redirect to confirm
+    # the email is valid and registered in our DB
+    user = request.headers.get("X-User-Email")
     if user:
-        return jsonify({"email": user})
+        from backend.token_store import get_user
+        if get_user(user):
+            return jsonify({"email": user})
     return jsonify({"email": None}), 401
 
 
@@ -226,4 +240,4 @@ def send_reply():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)  
+    app.run(host="0.0.0.0", port=5000, debug=False)  # FIX 7: debug=False in prod
