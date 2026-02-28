@@ -24,10 +24,19 @@ REDIRECT_URI = os.getenv(
 
 
 def create_flow():
-    return Flow.from_client_secrets_file(
-        CLIENT_SECRET_FILE,
+    client_config = {
+        "web": {
+            "client_id": os.environ["GOOGLE_CLIENT_ID"],
+            "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
+    }
+
+    return Flow.from_client_config(
+        client_config,
         scopes=SCOPES,
-        redirect_uri=REDIRECT_URI
+        redirect_uri=REDIRECT_URI,
     )
 
 
