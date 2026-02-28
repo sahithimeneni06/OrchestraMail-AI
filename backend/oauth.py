@@ -1,5 +1,8 @@
 import os
 import json
+import hashlib
+import base64
+import secrets
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from backend.config import SCOPES
@@ -23,33 +26,48 @@ def create_flow():
     )
 
 
+def _generate_pkce():
+    """Generate a PKCE code_verifier and code_challenge pair."""
+    code_verifier = secrets.token_urlsafe(64)
+    digest = hashlib.sha256(code_verifier.encode()).digest()
+    code_challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    return code_verifier, code_challenge
+
+
 def get_auth_url():
     """
-    Returns (auth_url, state, None).
-    Flask unpacks all three — None is for code_verifier (no PKCE used).
+    Returns (auth_url, state, code_verifier).
+    Generates a real PKCE code_verifier so Google doesn't reject the token exchange.
+    Flask stores code_verifier in session and passes it back in get_token().
     """
     try:
         flow = create_flow()
+        code_verifier, code_challenge = _generate_pkce()
+
         auth_url, state = flow.authorization_url(
             prompt="consent",
             access_type="offline",
-            include_granted_scopes="false"
+            include_granted_scopes="false",
+            code_challenge=code_challenge,
+            code_challenge_method="S256"
         )
-        return auth_url, state, None
+        return auth_url, state, code_verifier
     except Exception as e:
         return str(e), None, None
 
 
 def get_token(code, code_verifier=None):
     """
-    Exchange auth code for tokens and return a dict.
+    Exchange auth code for tokens using PKCE code_verifier.
     Uses userinfo endpoint for email — creds.id_token is unreliable.
     """
     flow = create_flow()
-    flow.fetch_token(code=code)
+
+    # Must pass code_verifier to satisfy Google's PKCE requirement
+    flow.fetch_token(code=code, code_verifier=code_verifier)
     creds = flow.credentials
 
-    # userinfo endpoint is reliable — id_token["email"] crashes randomly
+    # userinfo endpoint is reliable across all Google account types
     oauth2_service = build("oauth2", "v2", credentials=creds)
     user_info = oauth2_service.userinfo().get().execute()
 
