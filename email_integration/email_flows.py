@@ -1,6 +1,6 @@
-from .oauth import get_gmail_service_for_user
-from .gmail_reader import get_email_data
-from .gmail_sender import send_reply, send_new_email
+from email_integration.gmail_service import get_gmail_service_for_user
+from email_integration.gmail_reader import get_email_data
+from email_integration.gmail_sender import send_reply, send_new_email
 from utils.helpers import extract_email
 from chain.chain import final_pipeline
 
@@ -13,22 +13,15 @@ def send_new_email_flow(
     recipient_type=None,
     recipient_name=None,
     subject_override=None,
-    body_override=None,     # FIX: added — used when sending the edited draft
+    body_override=None,
     send=False
 ):
-    """
-    Two modes:
-    1. Generate mode (send=False): run AI pipeline, return draft for user to review.
-    2. Send mode (send=True): skip AI, use subject_override + body_override directly.
-    """
     service = get_gmail_service_for_user(user_email)
 
     if send and subject_override and body_override:
-        # User already reviewed and edited the draft — just send it
         send_new_email(service, to_email, subject_override, body_override)
         return {"status": "sent"}
 
-    # Generate a fresh draft via AI
     ai_reply = final_pipeline(
         user_intent=user_intent,
         recipient_type=recipient_type,
@@ -51,7 +44,6 @@ def send_new_email_flow(
 
 
 def reply_from_inbox_flow(user_email, max_results=100):
-    """Fetch the latest N emails from the inbox."""
     service = get_gmail_service_for_user(user_email)
 
     results = service.users().messages().list(
@@ -65,7 +57,6 @@ def reply_from_inbox_flow(user_email, max_results=100):
 
 
 def reply_using_email_flow(user_email, target_email, max_results=100):
-    """Search all threads involving a specific email address."""
     service = get_gmail_service_for_user(user_email)
 
     results = service.users().messages().list(
@@ -85,7 +76,6 @@ def generate_reply(
     recipient_type=None,
     recipient_name=None
 ):
-    """Generate an AI reply for a selected email thread."""
     ai_reply = final_pipeline(
         user_intent=user_intent,
         recipient_type=recipient_type,
@@ -104,7 +94,6 @@ def generate_reply(
 
 
 def send_reply_flow(user_email, reply_data):
-    """Send a reply to an existing thread."""
     service = get_gmail_service_for_user(user_email)
 
     send_reply(

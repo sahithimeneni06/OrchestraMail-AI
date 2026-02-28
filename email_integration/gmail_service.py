@@ -1,7 +1,7 @@
 import os
 import json
-from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request
 from backend.token_store import get_user, save_user
@@ -26,50 +26,23 @@ def create_flow():
     )
 
 
-def get_auth_url():
-    try:
-        flow = create_flow()
-        auth_url, _ = flow.authorization_url(
-            prompt="consent",
-            access_type="offline",
-            include_granted_scopes="false"
-        )
-        return auth_url, flow.state
-    except Exception as e:
-        return str(e), None
-
-
-def get_token(code):
-    flow = create_flow()
-    flow.fetch_token(code=code)
-
-    creds = flow.credentials
-
-    return {
-        "access_token": creds.token,
-        "refresh_token": creds.refresh_token,
-        "token_uri": creds.token_uri,
-        "client_id": creds.client_id,
-        "client_secret": creds.client_secret,
-        "scopes": creds.scopes,
-        "email": creds.id_token["email"]
-    }
-
-
 def get_gmail_service_for_user(user_email):
-
+    """
+    Build an authenticated Gmail API service for the given user.
+    Loads token from DB and refreshes if expired.
+    """
     token = get_user(user_email)
 
     if not token:
-        raise Exception("User not authorized")
+        raise Exception(f"User {user_email} not found. Please log in again.")
 
     creds = Credentials(
         token=token["access_token"],
         refresh_token=token["refresh_token"],
-        token_uri="https://oauth2.googleapis.com/token",
+        token_uri=token.get("token_uri", "https://oauth2.googleapis.com/token"),
         client_id=token["client_id"],
         client_secret=token["client_secret"],
-        scopes=token["scopes"]
+        scopes=token.get("scopes", [])
     )
 
     if creds.expired and creds.refresh_token:
