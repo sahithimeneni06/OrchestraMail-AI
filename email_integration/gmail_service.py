@@ -7,9 +7,15 @@ from google.auth.transport.requests import Request
 from backend.token_store import get_user, save_user
 from backend.config import SCOPES
 
-CLIENT_CONFIG = json.loads(os.getenv("GOOGLE_CLIENT_CONFIG"))
+config_str = os.getenv("GOOGLE_CLIENT_CONFIG")
+if not config_str:
+    raise ValueError("GOOGLE_CLIENT_CONFIG not set")
+
+CLIENT_CONFIG = json.loads(config_str)
 
 REDIRECT_URI = os.getenv("REDIRECT_URI")
+if not REDIRECT_URI:
+    raise ValueError("REDIRECT_URI not set")
 
 
 def create_flow():
@@ -21,15 +27,16 @@ def create_flow():
 
 
 def get_auth_url():
-    flow = create_flow()
-
-    auth_url, _ = flow.authorization_url(
-        prompt="consent",
-        access_type="offline",
-        include_granted_scopes="false"
-    )
-
-    return auth_url, flow.state
+    try:
+        flow = create_flow()
+        auth_url, _ = flow.authorization_url(
+            prompt="consent",
+            access_type="offline",
+            include_granted_scopes="false"
+        )
+        return auth_url, flow.state
+    except Exception as e:
+        return str(e), None
 
 
 def get_token(code):

@@ -17,17 +17,13 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret")
-
+init_db()
 app.config.update(
     SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
     SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
 )
 
-CORS(
-    app,
-    supports_credentials=True,
-    origins=[FRONTEND_URL]
-)
+CORS(app, supports_credentials=True, origins=[FRONTEND_URL])
 
 @app.route("/")
 def health():
@@ -39,15 +35,16 @@ def require_login():
         return None, (jsonify({"error": "Not logged in"}), 401)
     return user, None
 
-# 🔐 LOGIN
 @app.route("/login")
 def login():
     auth_url, state = get_auth_url()
-    session.permanent = True
+
+    if state is None:
+        return auth_url   
     session["state"] = state
+    session.permanent = True
     return redirect(auth_url)
 
-# 🔁 GOOGLE CALLBACK
 @app.route("/oauth2callback")
 def callback():
     try:
@@ -182,6 +179,6 @@ def send_reply():
     return jsonify({"status": "reply sent"})
 
 
+
 if __name__ == "__main__":
-    init_db()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=5000, debug=True)
