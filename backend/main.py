@@ -3,6 +3,7 @@ from backend.token_store import save_user, init_db
 from dotenv import load_dotenv
 from flask_cors import CORS
 import os
+import traceback
 
 load_dotenv()
 
@@ -134,16 +135,19 @@ def generate_email():
 
     data = request.json
 
-    result = send_new_email_flow(
-        user_email=user,
-        to=data["to"],
-        user_intent=data["intent"],
-        sender_name=data["sender"],
-        recipient_type=data["recipient_type"],
-        recipient_name=data.get("recipient_name", "")
-    )
-
-    return jsonify(result)
+    try:
+        result = send_new_email_flow(
+            user_email=user,
+            to=data["to"],
+            user_intent=data["intent"],
+            sender_name=data["sender"],
+            recipient_type=data["recipient_type"],
+            recipient_name=data.get("recipient_name", "")
+        )
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
 
 # SEND EMAIL
@@ -157,15 +161,18 @@ def send_email():
 
     data = request.json
 
-    send_new_email_flow(
-        user_email=user,
-        to=data["to"],
-        subject_override=data["subject"],
-        body_override=data["body"],
-        send=True
-    )
-
-    return jsonify({"status": "sent"})
+    try:
+        send_new_email_flow(
+            user_email=user,
+            to=data["to"],
+            subject_override=data["subject"],
+            body_override=data["body"],
+            send=True
+        )
+        return jsonify({"status": "sent"})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
 
 # INBOX
@@ -177,8 +184,12 @@ def inbox():
     if err:
         return err
 
-    emails = reply_from_inbox_flow(user, 100)
-    return jsonify(emails)
+    try:
+        emails = reply_from_inbox_flow(user, 100)
+        return jsonify(emails)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
 
 # SEARCH
@@ -192,13 +203,16 @@ def search_email():
 
     data = request.json
 
-    emails = reply_using_email_flow(
-        user_email=user,
-        target_email=data["email"],
-        max_results=100
-    )
-
-    return jsonify(emails)
+    try:
+        emails = reply_using_email_flow(
+            user_email=user,
+            target_email=data["email"],
+            max_results=100
+        )
+        return jsonify(emails)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
 
 # GENERATE REPLY
@@ -212,15 +226,18 @@ def generate_ai_reply():
 
     data = request.json
 
-    result = generate_reply(
-        selected_email=data["selected_email"],
-        user_intent=data["intent"],
-        sender_name=data["sender"],
-        recipient_type=data["recipient_type"],
-        recipient_name=data.get("recipient_name", "")
-    )
-
-    return jsonify(result)
+    try:
+        result = generate_reply(
+            selected_email=data["selected_email"],
+            user_intent=data["intent"],
+            sender_name=data["sender"],
+            recipient_type=data["recipient_type"],
+            recipient_name=data.get("recipient_name", "")
+        )
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
 
 # SEND REPLY
@@ -234,10 +251,13 @@ def send_reply():
 
     data = request.json
 
-    send_reply_flow(user, data)
-
-    return jsonify({"status": "reply sent"})
+    try:
+        send_reply_flow(user, data)
+        return jsonify({"status": "reply sent"})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)  # FIX 7: debug=False in prod
+    app.run(host="0.0.0.0", port=5000, debug=False)  

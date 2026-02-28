@@ -888,7 +888,11 @@ elif st.session_state.page == "new":
                         else:
                             st.error(f"Unexpected response: {data}")
                     else:
-                        st.error(f"Failed to generate email (status {res.status_code})")
+                        try:
+                            err_detail = res.json().get("error", res.text)
+                        except Exception:
+                            err_detail = res.text
+                        st.error(f"Failed to generate email ({res.status_code}): {err_detail}")
                 except Exception as e:
                     st.session_state.generated_email = {
                         "subject": "Draft Subject",
@@ -917,7 +921,11 @@ elif st.session_state.page == "new":
                     st.markdown("<div class='msg-ok'>✦ Email sent!</div>", unsafe_allow_html=True)
                     st.session_state.generated_email = None
                 else:
-                    st.error(f"Send failed (status {res.status_code})")
+                    try:
+                        err_detail = res.json().get("error", res.text)
+                    except Exception:
+                        err_detail = res.text
+                    st.error(f"Send failed ({res.status_code}): {err_detail}")
             except Exception as e:
                 st.error(f"Send error: {e}")
 
@@ -1029,7 +1037,11 @@ elif st.session_state.page == "inbox":
                                 else:
                                     st.error(f"Unexpected reply format: {data}")
                             else:
-                                st.error(f"Reply generation failed (status {res.status_code})")
+                                try:
+                                    err_detail = res.json().get("error", res.text)
+                                except Exception:
+                                    err_detail = res.text
+                                st.error(f"Reply generation failed ({res.status_code}): {err_detail}")
                         except Exception as e:
                             st.session_state.ai_reply = {
                                 "subject": "Re: " + sel.get("subject", ""),
@@ -1157,7 +1169,11 @@ elif st.session_state.page == "reply":
                                 else:
                                     st.error(f"Unexpected reply format: {data}")
                             else:
-                                st.error(f"Reply generation failed (status {res.status_code})")
+                                try:
+                                    err_detail = res.json().get("error", res.text)
+                                except Exception:
+                                    err_detail = res.text
+                                st.error(f"Reply generation failed ({res.status_code}): {err_detail}")
                         except Exception as e:
                             st.session_state.ai_reply = {
                                 "subject": "Re: " + sel.get("subject", ""),
