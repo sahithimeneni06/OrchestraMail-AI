@@ -1,5 +1,4 @@
 from flask import Flask, redirect, request, session, jsonify
-from backend.oauth import get_auth_url, get_token
 from backend.token_store import save_user, init_db
 from dotenv import load_dotenv
 from flask_cors import CORS
@@ -12,7 +11,9 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev_secret")
 
-init_db()
+@app.before_first_request
+def startup():
+    init_db()
 
 app.config.update(
     SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
@@ -37,6 +38,7 @@ def require_login():
 # 🔐 LOGIN
 @app.route("/login")
 def login():
+    from backend.oauth import get_auth_url
     auth_url, state, code_verifier = get_auth_url()
 
     if state is None:
@@ -61,7 +63,7 @@ def callback():
 
         if state != session.get("state"):
             return "State mismatch ❌"
-
+        from backend.oauth import get_token
         token = get_token(code, session.get("code_verifier"))
         user_email = token["email"]
 
