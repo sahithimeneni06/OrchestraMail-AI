@@ -22,9 +22,15 @@ app.config.update(
 
 CORS(app, supports_credentials=True, origins=[FRONTEND_URL])
 
-
+db_initialized = False
 @app.route("/")
 def health():
+    global db_initialized
+
+    if not db_initialized:
+        init_db()
+        db_initialized = True
+
     return "Backend running ✅"
 
 
