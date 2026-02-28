@@ -1,53 +1,41 @@
 import os
+import json
 from google_auth_oauthlib.flow import Flow
-from dotenv import load_dotenv
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from backend.token_store import get_user 
 from google.auth.transport.requests import Request
-from backend.token_store import save_user
+from backend.token_store import get_user, save_user
 from backend.config import SCOPES
 
-load_dotenv()
+CLIENT_CONFIG = json.loads(os.getenv("GOOGLE_CLIENT_CONFIG"))
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CLIENT_SECRET_FILE = os.path.join(BASE_DIR, "data", "client_secret.json")
-
-if not CLIENT_SECRET_FILE:
-    raise ValueError("GOOGLE_CLIENT_SECRET not set in .env")
-
-# convert to absolute path
-CLIENT_SECRET_FILE = os.path.join(BASE_DIR, "..", CLIENT_SECRET_FILE)
+REDIRECT_URI = os.getenv("REDIRECT_URI")
 
 
-REDIRECT_URI = "http://localhost:5000/oauth2callback"
+def create_flow():
+    return Flow.from_client_config(
+        CLIENT_CONFIG,
+        scopes=SCOPES,
+        redirect_uri=REDIRECT_URI
+    )
 
 
 def get_auth_url():
-    flow = Flow.from_client_secrets_file(
-        CLIENT_SECRET_FILE,
-        scopes=SCOPES,
-        redirect_uri=REDIRECT_URI
-    )
+    flow = create_flow()
 
     auth_url, _ = flow.authorization_url(
         prompt="consent",
-access_type="offline",
-include_granted_scopes="false"
+        access_type="offline",
+        include_granted_scopes="false"
     )
 
-    return auth_url
+    return auth_url, flow.state
 
 
 def get_token(code):
-
-    flow = Flow.from_client_secrets_file(
-        CLIENT_SECRET_FILE,
-        scopes=SCOPES,
-        redirect_uri=REDIRECT_URI
-    )
-
+    flow = create_flow()
     flow.fetch_token(code=code)
+
     creds = flow.credentials
 
     return {
@@ -61,14 +49,12 @@ def get_token(code):
     }
 
 
-
-
 def get_gmail_service_for_user(user_email):
 
     token = get_user(user_email)
 
     if not token:
-        raise Exception("User not authorized. Please login again.")
+        raise Exception("User not authorized")
 
     creds = Credentials(
         token=token["access_token"],
@@ -81,7 +67,6 @@ def get_gmail_service_for_user(user_email):
 
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
-
         token["access_token"] = creds.token
         save_user(user_email, token)
 
