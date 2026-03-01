@@ -623,21 +623,56 @@ if "nav" in st.query_params:
 
 
 # ── HELPER: safe API list fetch ──
+def _show_access_request():
+    """Show Gmail access request UI (called on 403 oauth_not_granted)."""
+    st.markdown("""
+<div class='msg-warn'>
+🔒 <strong>Gmail access not enabled for your account yet.</strong><br>
+Enter your email below to request access from the admin.
+</div>
+""", unsafe_allow_html=True)
+    with st.form("access_request_form"):
+        req_email = st.text_input(
+            "Your email address",
+            value=st.session_state.get("user", ""),
+            key="access_req_email"
+        )
+        submitted = st.form_submit_button("📩 Request Access")
+        if submitted and req_email:
+            try:
+                backend.post(f"{BACKEND_URL}/request-access", json={"email": req_email})
+                st.success("✅ Request sent! You'll be notified when access is granted.")
+            except Exception as e:
+                st.error(f"Failed to send request: {e}")
+
+
+def _check_403(res):
+    """Handle 403. Returns True if it was a 403 (caller should stop)."""
+    try:
+        data = res.json()
+    except Exception:
+        data = {}
+    if data.get("error") == "oauth_not_granted":
+        _show_access_request()
+        return True
+    st.warning(f"⚠ Access forbidden: {data.get('error', res.text)}")
+    return True
+
+
 def safe_fetch_list(res):
-    """
-    Given a requests.Response, return a list or [].
-    Guards against:
-      - non-200 status (401 = not logged in, etc.)
-      - JSON that is a dict (error payload) instead of a list
-      - JSON that is a string
-      - Any other unexpected type
-    Shows a user-friendly error via st.warning when something goes wrong.
-    """
+    """Return a list from a response, or [] with a user-friendly message."""
     if res.status_code == 401:
-        st.warning("⚠ Session expired or not logged in. Please sign out and sign in again.")
+        st.warning("⚠ Session expired. Please sign out and sign in again.")
+        return []
+    if res.status_code == 403:
+        _check_403(res)
         return []
     if not res.ok:
-        st.warning(f"⚠ Server returned status {res.status_code}. Please try again.")
+        try:
+            err = res.json().get("error", res.text)
+        except Exception:
+            err = res.text
+        st.warning(f"⚠ Server error ({res.status_code}): {err}")
         return []
     try:
         data = res.json()
@@ -646,15 +681,12 @@ def safe_fetch_list(res):
         return []
     if isinstance(data, list):
         return data
-    # dict with an error key
     if isinstance(data, dict):
         err = data.get("error") or data.get("message") or str(data)
         st.warning(f"⚠ Server error: {err}")
         return []
-    # string or anything else
-    st.warning(f"⚠ Unexpected response from server: {data}")
+    st.warning(f"⚠ Unexpected response: {data}")
     return []
-
 
 # ── LANDING (unauthenticated) ──
 if not st.session_state.user:
@@ -892,6 +924,8 @@ elif st.session_state.page == "new":
                     )
                     if res.status_code == 401:
                         st.warning("⚠ Session expired. Please sign out and sign in again.")
+                    elif res.status_code == 403:
+                        _check_403(res)
                     elif res.ok:
                         data = res.json()
                         if isinstance(data, dict) and "email" in data:
@@ -928,6 +962,8 @@ elif st.session_state.page == "new":
                 )
                 if res.status_code == 401:
                     st.warning("⚠ Session expired. Please sign out and sign in again.")
+                elif res.status_code == 403:
+                    _check_403(res)
                 elif res.ok:
                     st.markdown("<div class='msg-ok'>✦ Email sent!</div>", unsafe_allow_html=True)
                     st.session_state.generated_email = None
@@ -1041,6 +1077,8 @@ elif st.session_state.page == "inbox":
                             )
                             if res.status_code == 401:
                                 st.warning("⚠ Session expired. Please sign out and sign in again.")
+                            elif res.status_code == 403:
+                                _check_403(res)
                             elif res.ok:
                                 data = res.json()
                                 if isinstance(data, dict):
@@ -1173,6 +1211,8 @@ elif st.session_state.page == "reply":
                             )
                             if res.status_code == 401:
                                 st.warning("⚠ Session expired. Please sign out and sign in again.")
+                            elif res.status_code == 403:
+                                _check_403(res)
                             elif res.ok:
                                 data = res.json()
                                 if isinstance(data, dict):

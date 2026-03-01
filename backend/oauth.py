@@ -63,11 +63,9 @@ def get_token(code, code_verifier=None):
     """
     flow = create_flow()
 
-    # Must pass code_verifier to satisfy Google's PKCE requirement
     flow.fetch_token(code=code, code_verifier=code_verifier)
     creds = flow.credentials
 
-    # userinfo endpoint is reliable across all Google account types
     oauth2_service = build("oauth2", "v2", credentials=creds)
     user_info = oauth2_service.userinfo().get().execute()
 

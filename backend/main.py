@@ -58,7 +58,7 @@ def handle_500(e):
 
 @app.route("/")
 def health():
-    return "OrchestraMail backend running ✅"
+    return "OrchestraMail backend running"
 
 
 @app.route("/debug")
@@ -75,10 +75,12 @@ def debug():
 def require_login():
     user = request.headers.get("X-User-Email")
     if not user:
+        # No header at all → not logged in
         return None, (jsonify({"error": "Not logged in — X-User-Email header missing"}), 401)
     from backend.token_store import get_user
     if not get_user(user):
-        return None, (jsonify({"error": f"No token found for {user}. Please log in again."}), 401)
+        # Header present but no Gmail token in DB → need to grant OAuth
+        return None, (jsonify({"error": "oauth_not_granted", "detail": f"No Gmail token for {user}"}), 403)
     return user, None
 
 
@@ -130,6 +132,33 @@ def get_current_user():
 def logout():
     session.clear()
     return jsonify({"status": "logged out"})
+
+
+@app.route("/request-access", methods=["POST"])
+def request_access():
+    """Store access requests from users who don't have Gmail OAuth yet."""
+    email = request.json.get("email", "").strip()
+    if not email:
+        return jsonify({"error": "Email required"}), 400
+    # Visible in Render logs dashboard
+    print(f"[ACCESS REQUEST] {email}", flush=True)
+    try:
+        from datetime import datetime
+        with open("/tmp/access_requests.txt", "a") as f:
+            f.write(f"{datetime.utcnow().isoformat()} {email}\n")
+    except Exception:
+        pass
+    return jsonify({"msg": "Request received."})
+
+
+@app.route("/access-requests")
+def list_access_requests():
+    """Admin view — visit in browser to see who requested access."""
+    try:
+        with open("/tmp/access_requests.txt") as f:
+            return f.read(), 200, {"Content-Type": "text/plain"}
+    except FileNotFoundError:
+        return "No requests yet.", 200
 
 
 # ── EMAIL ROUTES ──────────────────────────────────────────
