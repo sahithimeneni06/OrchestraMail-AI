@@ -10,13 +10,6 @@ st.set_page_config(
 import os
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 
-# ── PERSISTENT BACKEND SESSION ──
-# requests.Session() is created once and reused across all Streamlit reruns.
-# IMPORTANT: Flask session cookies cannot work here. The OAuth flow runs in
-# the browser; Python's requests.Session is a completely separate HTTP client
-# that never receives browser cookies. Instead, we identify every request by
-# injecting the user's email in an X-User-Email header, which Flask reads
-# directly. This is set/updated via update_backend_auth() below.
 if "backend" not in st.session_state:
     st.session_state.backend = requests.Session()
 backend = st.session_state.backend
@@ -35,11 +28,17 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
-  --gold:#c9a84c; --gold-lt:#e8cc7e;
+  --gold:#a87c2a; --gold-lt:#c9a84c;
   --violet:#6c4a9e; --violet-lt:#9b72d0;
-  --teal:#2a9d8f; --teal-lt:#52c4b5;
-  --blush:#e8b4b8; --cream:#f7f3ec;
-  --bg:#08071a;
+  --teal:#2a9d8f; --teal-lt:#1b7a6e;
+  --blush:#c47a80; --cream:#faf7f2;
+  --bg:#f4f1ec;
+  --text-primary:#1a1625;
+  --text-secondary:#4a4260;
+  --text-muted:#7a7290;
+  --border:rgba(60,40,100,0.12);
+  --surface:rgba(255,255,255,0.85);
+  --surface-hover:rgba(255,255,255,0.98);
 }
 
 #MainMenu{visibility:hidden !important}
@@ -67,9 +66,9 @@ header{visibility:hidden !important}
 
 /* ── BUTTONS ── */
 .stButton > button {
-  background: rgba(255,255,255,0.06) !important;
-  color: rgba(247,243,236,0.82) !important;
-  border: 1px solid rgba(255,255,255,0.14) !important;
+  background: rgba(255,255,255,0.75) !important;
+  color: #2a1f4a !important;
+  border: 1px solid rgba(60,40,100,0.18) !important;
   border-radius: 50px !important;
   padding: 10px 26px !important;
   font-family: 'DM Sans', sans-serif !important;
@@ -77,79 +76,80 @@ header{visibility:hidden !important}
   font-weight: 500 !important;
   width: auto !important;
   transition: all 0.25s ease !important;
-  box-shadow: none !important;
+  box-shadow: 0 2px 8px rgba(60,40,100,0.08) !important;
   letter-spacing: 0.2px !important;
 }
 .stButton > button:hover {
-  background: rgba(255,255,255,0.12) !important;
-  border-color: rgba(255,255,255,0.32) !important;
-  color: #f7f3ec !important;
+  background: rgba(255,255,255,0.98) !important;
+  border-color: rgba(108,74,158,0.38) !important;
+  color: #1a1025 !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 8px 24px rgba(60,40,100,0.15) !important;
 }
 .stButton > button:focus:not(:hover) {
   box-shadow: none !important;
-  border-color: rgba(255,255,255,0.2) !important;
+  border-color: rgba(108,74,158,0.22) !important;
 }
 
 /* ── INPUTS ── */
 .stTextInput > div > div > input,
 .stTextArea > div > textarea {
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid rgba(255,255,255,0.11) !important;
+  background: rgba(255,255,255,0.9) !important;
+  border: 1px solid rgba(60,40,100,0.14) !important;
   border-radius: 12px !important;
-  color: #f7f3ec !important;
+  color: #1a1625 !important;
   font-family: 'DM Sans', sans-serif !important;
   font-size: 0.94rem !important;
-  caret-color: #e8cc7e;
+  caret-color: #a87c2a;
+  box-shadow: 0 1px 4px rgba(60,40,100,0.06) !important;
 }
 .stTextInput > div > div > input:focus,
 .stTextArea > div > textarea:focus {
-  border-color: rgba(201,168,76,0.55) !important;
-  box-shadow: 0 0 0 3px rgba(201,168,76,0.1) !important;
+  border-color: rgba(168,124,42,0.55) !important;
+  box-shadow: 0 0 0 3px rgba(168,124,42,0.1) !important;
 }
 .stTextInput label, .stTextArea label, .stSelectbox label {
-  color: rgba(247,243,236,0.5) !important;
+  color: rgba(60,40,100,0.6) !important;
   font-family: 'DM Sans', sans-serif !important;
   font-size: 0.84rem !important;
 }
-p { color: rgba(247,243,236,0.65) !important; font-family: 'DM Sans', sans-serif !important; }
+p { color: rgba(26,22,37,0.65) !important; font-family: 'DM Sans', sans-serif !important; }
 
 /* ── SELECTBOX ── */
 .stSelectbox > div > div {
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid rgba(255,255,255,0.11) !important;
+  background: rgba(255,255,255,0.9) !important;
+  border: 1px solid rgba(60,40,100,0.14) !important;
   border-radius: 12px !important;
 }
-.stSelectbox > div > div > div { color: #f7f3ec !important; }
+.stSelectbox > div > div > div { color: #1a1625 !important; }
 
 /* ── EXPANDER ── */
 details > summary {
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
+  background: rgba(255,255,255,0.7) !important;
+  border: 1px solid rgba(60,40,100,0.1) !important;
   border-radius: 10px !important;
-  color: rgba(247,243,236,0.65) !important;
+  color: rgba(26,22,37,0.65) !important;
   padding: 10px 16px !important;
   font-family: 'DM Sans', sans-serif !important;
 }
 .streamlit-expanderHeader {
-  background: rgba(255,255,255,0.04) !important;
+  background: rgba(255,255,255,0.7) !important;
   border-radius: 10px !important;
-  color: rgba(247,243,236,0.65) !important;
+  color: rgba(26,22,37,0.65) !important;
 }
 
 /* ── INFO ── */
 .stAlert {
-  background: rgba(42,157,143,0.1) !important;
-  border: 1px solid rgba(42,157,143,0.2) !important;
+  background: rgba(42,157,143,0.08) !important;
+  border: 1px solid rgba(42,157,143,0.22) !important;
   border-radius: 12px !important;
 }
-.stAlert p { color: rgba(82,196,181,0.9) !important; }
+.stAlert p { color: rgba(27,122,110,0.9) !important; }
 
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:rgba(255,255,255,0.02)}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+::-webkit-scrollbar-track{background:rgba(60,40,100,0.04)}
+::-webkit-scrollbar-thumb{background:rgba(60,40,100,0.15);border-radius:3px}
 
 .bg-orb {
   position: fixed; border-radius: 50%;
@@ -158,17 +158,17 @@ details > summary {
 }
 .bg-orb-1 {
   width:520px;height:520px;top:-160px;left:-160px;
-  background: radial-gradient(circle, rgba(108,74,158,0.28) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(108,74,158,0.13) 0%, transparent 70%);
   animation-duration:12s;
 }
 .bg-orb-2 {
   width:420px;height:420px;top:25%;right:-120px;
-  background: radial-gradient(circle, rgba(201,168,76,0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(168,124,42,0.12) 0%, transparent 70%);
   animation-duration:15s;animation-delay:-5s;
 }
 .bg-orb-3 {
   width:480px;height:480px;bottom:-120px;left:32%;
-  background: radial-gradient(circle, rgba(42,157,143,0.22) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(42,157,143,0.12) 0%, transparent 70%);
   animation-duration:11s;animation-delay:-3s;
 }
 @keyframes bgOrbFloat {
@@ -178,7 +178,7 @@ details > summary {
 
 .bg-noise {
   position:fixed;top:0;left:0;width:100%;height:100%;
-  opacity:0.032;pointer-events:none;z-index:1;
+  opacity:0.018;pointer-events:none;z-index:1;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:300px;
 }
@@ -190,10 +190,10 @@ details > summary {
 }
 .om-badge {
   display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(201,168,76,0.1);
-  border: 1px solid rgba(201,168,76,0.28);
+  background: rgba(168,124,42,0.1);
+  border: 1px solid rgba(168,124,42,0.28);
   border-radius: 100px; padding: 7px 20px;
-  color: #e8cc7e;
+  color: #a87c2a;
   font-family: 'Space Mono', monospace;
   font-size: 0.67rem; letter-spacing: 2px; text-transform: uppercase;
   margin-bottom: 30px;
@@ -203,18 +203,18 @@ details > summary {
   font-family: 'Cormorant Garamond', serif;
   font-size: clamp(3.2rem, 8vw, 7rem);
   font-weight: 300; line-height: 0.98;
-  color: #f7f3ec; letter-spacing: -1.5px;
+  color: #1a1625; letter-spacing: -1.5px;
   margin-bottom: 16px;
   animation: fadeup 0.65s ease 0.12s both;
 }
 .om-title .grad {
   font-style: italic;
-  background: linear-gradient(135deg, #e8cc7e 0%, #e8b4b8 45%, #9b72d0 100%);
+  background: linear-gradient(135deg, #a87c2a 0%, #c47a80 45%, #6c4a9e 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .om-sub {
   font-size: 1.08rem; font-weight: 300;
-  color: rgba(247,243,236,0.42);
+  color: rgba(26,22,37,0.48);
   max-width: 500px; margin: 0 auto 42px; line-height: 1.72;
   animation: fadeup 0.65s ease 0.2s both;
 }
@@ -224,42 +224,43 @@ details > summary {
 }
 .om-chip {
   display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(60,40,100,0.12);
   border-radius: 10px; padding: 10px 16px;
-  color: rgba(247,243,236,0.72);
+  color: rgba(26,22,37,0.72);
   font-family: 'DM Sans', sans-serif; font-size: 0.86rem;
   transition: all 0.3s ease;
   animation: fadeup 0.6s ease both;
+  box-shadow: 0 2px 8px rgba(60,40,100,0.07);
 }
 .om-chip:nth-child(1){animation-delay:0.28s}
-.om-chip:nth-child(2){animation-delay:0.34s;border-color:rgba(42,157,143,0.25)}
-.om-chip:nth-child(3){animation-delay:0.40s;border-color:rgba(108,74,158,0.25)}
-.om-chip:nth-child(4){animation-delay:0.46s;border-color:rgba(232,180,184,0.25)}
-.om-chip:nth-child(5){animation-delay:0.52s;border-color:rgba(201,168,76,0.25)}
+.om-chip:nth-child(2){animation-delay:0.34s;border-color:rgba(42,157,143,0.22)}
+.om-chip:nth-child(3){animation-delay:0.40s;border-color:rgba(108,74,158,0.22)}
+.om-chip:nth-child(4){animation-delay:0.46s;border-color:rgba(196,122,128,0.22)}
+.om-chip:nth-child(5){animation-delay:0.52s;border-color:rgba(168,124,42,0.22)}
 .om-chip:nth-child(6){animation-delay:0.58s}
 
 /* Landing sign-in btn */
 .lp-btn .stButton > button {
-  background: linear-gradient(135deg, rgba(201,168,76,0.22) 0%, rgba(108,74,158,0.28) 100%) !important;
-  border: 1.5px solid rgba(201,168,76,0.5) !important;
-  color: #f7f3ec !important;
+  background: linear-gradient(135deg, rgba(168,124,42,0.14) 0%, rgba(108,74,158,0.18) 100%) !important;
+  border: 1.5px solid rgba(168,124,42,0.45) !important;
+  color: #1a1625 !important;
   font-size: 1.06rem !important;
   padding: 14px 38px !important;
   border-radius: 100px !important;
-  box-shadow: 0 0 40px rgba(201,168,76,0.18), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  box-shadow: 0 4px 24px rgba(168,124,42,0.18), inset 0 1px 0 rgba(255,255,255,0.6) !important;
   letter-spacing: 0.3px !important;
   animation: fadeup 0.65s ease 0.65s both;
 }
 .lp-btn .stButton > button:hover {
-  box-shadow: 0 18px 55px rgba(201,168,76,0.35), 0 0 80px rgba(108,74,158,0.22) !important;
+  box-shadow: 0 18px 55px rgba(168,124,42,0.28), 0 0 80px rgba(108,74,158,0.14) !important;
   transform: translateY(-4px) scale(1.025) !important;
-  border-color: #c9a84c !important;
+  border-color: #a87c2a !important;
 }
 
 .modal-bg {
   position: fixed; top:0;left:0;width:100%;height:100%;
-  background: rgba(8,7,26,0.88);
+  background: rgba(240,236,230,0.82);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   z-index: 9998;
@@ -268,12 +269,12 @@ details > summary {
 }
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .modal-card {
-  background: linear-gradient(145deg, #141030, #0c1825);
-  border: 1px solid rgba(201,168,76,0.22);
+  background: linear-gradient(145deg, #ffffff, #f8f4ee);
+  border: 1px solid rgba(168,124,42,0.22);
   border-radius: 26px; padding: 50px 46px;
   width: 100%; max-width: 400px;
   position: relative; overflow: hidden;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.7), 0 0 80px rgba(108,74,158,0.2);
+  box-shadow: 0 40px 100px rgba(60,40,100,0.18), 0 0 80px rgba(108,74,158,0.08);
   animation: cardIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
 }
 @keyframes cardIn{
@@ -282,88 +283,91 @@ details > summary {
 }
 .modal-card::after{
   content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(201,168,76,0.7),transparent);
+  background:linear-gradient(90deg,transparent,rgba(168,124,42,0.7),transparent);
 }
 .modal-logo {
   font-size: 2.7rem; display: block; text-align: center;
   margin-bottom: 8px;
-  filter: drop-shadow(0 0 22px rgba(201,168,76,0.65));
+  filter: drop-shadow(0 0 18px rgba(168,124,42,0.45));
   animation: iconPulse 3s ease infinite;
 }
 @keyframes iconPulse{
-  0%,100%{filter:drop-shadow(0 0 18px rgba(201,168,76,0.55))}
-  50%{filter:drop-shadow(0 0 38px rgba(201,168,76,0.95))}
+  0%,100%{filter:drop-shadow(0 0 14px rgba(168,124,42,0.4))}
+  50%{filter:drop-shadow(0 0 32px rgba(168,124,42,0.75))}
 }
 .modal-brand {
   font-family:'Cormorant Garamond',serif;
-  font-size:1.9rem;font-weight:600;color:#f7f3ec;text-align:center;margin-bottom:4px;
+  font-size:1.9rem;font-weight:600;color:#1a1625;text-align:center;margin-bottom:4px;
 }
 .modal-tag {
   font-family:'Space Mono',monospace;font-size:0.67rem;
   letter-spacing:1.8px;text-transform:uppercase;
-  color:rgba(247,243,236,0.3);text-align:center;margin-bottom:30px;
+  color:rgba(26,22,37,0.35);text-align:center;margin-bottom:30px;
 }
 .modal-info {
-  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  background:rgba(60,40,100,0.04);border:1px solid rgba(60,40,100,0.08);
   border-radius:11px;padding:13px 16px;
-  color:rgba(247,243,236,0.38);font-size:0.81rem;line-height:1.62;
+  color:rgba(26,22,37,0.48);font-size:0.81rem;line-height:1.62;
   text-align:center;margin-bottom:22px;
   font-family:'DM Sans',sans-serif;
 }
 .modal-div {
   display:flex;align-items:center;gap:13px;
-  color:rgba(247,243,236,0.2);font-size:0.74rem;
+  color:rgba(26,22,37,0.28);font-size:0.74rem;
   font-family:'Space Mono',monospace;letter-spacing:1px;margin-bottom:18px;
 }
-.modal-div::before,.modal-div::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
+.modal-div::before,.modal-div::after{content:'';flex:1;height:1px;background:rgba(60,40,100,0.1);}
 .g-btn {
   display:flex;align-items:center;justify-content:center;gap:12px;
   width:100%;padding:15px 22px;
-  background:rgba(255,255,255,0.055);
-  border:1.5px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.8);
+  border:1.5px solid rgba(60,40,100,0.14);
   border-radius:13px;
-  color:#f7f3ec !important;text-decoration:none !important;
+  color:#1a1625 !important;text-decoration:none !important;
   font-size:0.96rem;font-weight:500;font-family:'DM Sans',sans-serif;
   transition:all 0.28s ease;cursor:pointer;box-sizing:border-box;
+  box-shadow: 0 2px 10px rgba(60,40,100,0.08);
 }
 .g-btn:hover{
-  background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.26);
-  transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,0.35);
+  background:rgba(255,255,255,1);border-color:rgba(108,74,158,0.3);
+  transform:translateY(-2px);box-shadow:0 10px 28px rgba(60,40,100,0.15);
 }
 .g-circle{
   width:22px;height:22px;background:white;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   color:#4285F4;font-weight:800;font-size:0.72rem;flex-shrink:0;
   font-family:'DM Sans',sans-serif;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 .sec-note{
   display:flex;align-items:center;justify-content:center;gap:7px;
-  margin-top:22px;color:rgba(247,243,236,0.2);
+  margin-top:22px;color:rgba(26,22,37,0.3);
   font-size:0.72rem;font-family:'Space Mono',monospace;
 }
 
 .nav-wrap{
   display:flex;align-items:center;justify-content:space-between;
   padding:16px 0 14px;
-  border-bottom:1px solid rgba(255,255,255,0.06);
+  border-bottom:1px solid rgba(60,40,100,0.1);
   margin-bottom:32px;position:relative;z-index:10;
 }
 .nav-brand{display:flex;align-items:center;gap:12px;}
-.nav-icon{font-size:1.5rem;filter:drop-shadow(0 0 12px rgba(201,168,76,0.7));}
-.nav-name{font-family:'Cormorant Garamond',serif;font-size:1.55rem;font-weight:600;color:#f7f3ec;}
+.nav-icon{font-size:1.5rem;filter:drop-shadow(0 0 10px rgba(168,124,42,0.55));}
+.nav-name{font-family:'Cormorant Garamond',serif;font-size:1.55rem;font-weight:600;color:#1a1625;}
 .nav-name span{
-  background:linear-gradient(135deg,#e8cc7e,#9b72d0);
+  background:linear-gradient(135deg,#a87c2a,#6c4a9e);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
 .nav-user{
   display:flex;align-items:center;gap:10px;
-  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.8);border:1px solid rgba(60,40,100,0.12);
   border-radius:100px;padding:7px 15px 7px 7px;
-  color:rgba(247,243,236,0.6);font-size:0.84rem;font-family:'DM Sans',sans-serif;
+  color:rgba(26,22,37,0.65);font-size:0.84rem;font-family:'DM Sans',sans-serif;
+  box-shadow: 0 2px 8px rgba(60,40,100,0.07);
 }
 .nav-avatar{
   width:27px;height:27px;border-radius:50%;
-  background:linear-gradient(135deg,#c9a84c,#6c4a9e);
+  background:linear-gradient(135deg,#a87c2a,#6c4a9e);
   display:flex;align-items:center;justify-content:center;
   color:white;font-size:0.74rem;font-weight:700;
 }
@@ -371,20 +375,20 @@ details > summary {
 .hero-wrap{text-align:center;margin-bottom:50px;position:relative;z-index:2;}
 .hero-greeting{
   font-family:'Space Mono',monospace;font-size:0.67rem;
-  color:#52c4b5;letter-spacing:3px;text-transform:uppercase;
+  color:#1b7a6e;letter-spacing:3px;text-transform:uppercase;
   margin-bottom:13px;opacity:0.85;
 }
 .hero-h{
   font-family:'Cormorant Garamond',serif;
   font-size:clamp(2rem,4.5vw,3.6rem);
-  font-weight:300;color:#f7f3ec;line-height:1.08;margin-bottom:13px;
+  font-weight:300;color:#1a1625;line-height:1.08;margin-bottom:13px;
 }
 .hero-h em{
   font-style:italic;
-  background:linear-gradient(135deg,#e8cc7e 0%,#e8b4b8 55%,#9b72d0 100%);
+  background:linear-gradient(135deg,#a87c2a 0%,#c47a80 55%,#6c4a9e 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
-.hero-sub{color:rgba(247,243,236,0.35);font-size:0.94rem;max-width:400px;margin:0 auto;line-height:1.65;}
+.hero-sub{color:rgba(26,22,37,0.42);font-size:0.94rem;max-width:400px;margin:0 auto;line-height:1.65;}
 
 .cards-row{
   display:flex;gap:22px;
@@ -396,19 +400,19 @@ details > summary {
   position:relative;overflow:hidden;cursor:pointer;
   transition:transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275), box-shadow 0.4s ease, border-color 0.3s ease;
   min-height:320px;display:flex;flex-direction:column;justify-content:space-between;
-  border:1px solid rgba(255,255,255,0.06);
+  border:1px solid rgba(60,40,100,0.08);
 }
 .feat-card:hover{transform:translateY(-10px) scale(1.015);}
 .feat-card:nth-child(1){animation:fadeup 0.65s ease 0.1s both}
 .feat-card:nth-child(2){animation:fadeup 0.65s ease 0.2s both}
 .feat-card:nth-child(3){animation:fadeup 0.65s ease 0.3s both}
 
-.card-v{background:linear-gradient(148deg,#180a2c,#110725);box-shadow:0 16px 48px rgba(108,74,158,0.12);}
-.card-v:hover{box-shadow:0 28px 72px rgba(108,74,158,0.35);border-color:rgba(155,114,208,0.45);}
-.card-t{background:linear-gradient(148deg,#061829,#08202f);box-shadow:0 16px 48px rgba(42,157,143,0.1);}
-.card-t:hover{box-shadow:0 28px 72px rgba(42,157,143,0.3);border-color:rgba(82,196,181,0.42);}
-.card-r{background:linear-gradient(148deg,#1c0810,#1e0b14);box-shadow:0 16px 48px rgba(200,80,110,0.08);}
-.card-r:hover{box-shadow:0 28px 72px rgba(200,80,110,0.24);border-color:rgba(232,180,184,0.42);}
+.card-v{background:linear-gradient(148deg,#f5f0ff,#ede6ff);box-shadow:0 8px 32px rgba(108,74,158,0.1);}
+.card-v:hover{box-shadow:0 28px 72px rgba(108,74,158,0.22);border-color:rgba(155,114,208,0.35);}
+.card-t{background:linear-gradient(148deg,#eef8f6,#e2f5f2);box-shadow:0 8px 32px rgba(42,157,143,0.08);}
+.card-t:hover{box-shadow:0 28px 72px rgba(42,157,143,0.2);border-color:rgba(42,157,143,0.32);}
+.card-r{background:linear-gradient(148deg,#fff0f1,#fde8ea);box-shadow:0 8px 32px rgba(196,122,128,0.08);}
+.card-r:hover{box-shadow:0 28px 72px rgba(196,122,128,0.2);border-color:rgba(196,122,128,0.32);}
 
 /* Card internal orbs */
 .card-orb{
@@ -416,40 +420,40 @@ details > summary {
   filter:blur(55px);pointer-events:none;
   animation:orbPulse 6s ease-in-out infinite;
 }
-.orb-v1{width:190px;height:190px;top:-65px;right:-65px;background:rgba(108,74,158,0.5);}
-.orb-v2{width:130px;height:130px;bottom:-40px;left:-40px;background:rgba(201,168,76,0.22);animation-delay:-3s;}
-.orb-t1{width:190px;height:190px;top:-65px;right:-65px;background:rgba(42,157,143,0.45);}
-.orb-t2{width:130px;height:130px;bottom:-40px;left:-40px;background:rgba(10,80,100,0.35);animation-delay:-2s;}
-.orb-r1{width:190px;height:190px;top:-65px;right:-65px;background:rgba(185,60,90,0.4);animation-delay:-1s;}
-.orb-r2{width:130px;height:130px;bottom:-40px;left:-40px;background:rgba(232,180,184,0.22);animation-delay:-4s;}
+.orb-v1{width:190px;height:190px;top:-65px;right:-65px;background:rgba(155,114,208,0.22);}
+.orb-v2{width:130px;height:130px;bottom:-40px;left:-40px;background:rgba(168,124,42,0.12);animation-delay:-3s;}
+.orb-t1{width:190px;height:190px;top:-65px;right:-65px;background:rgba(42,157,143,0.18);}
+.orb-t2{width:130px;height:130px;bottom:-40px;left:-40px;background:rgba(10,100,90,0.12);animation-delay:-2s;}
+.orb-r1{width:190px;height:190px;top:-65px;right:-65px;background:rgba(196,122,128,0.2);animation-delay:-1s;}
+.orb-r2{width:130px;height:130px;bottom:-40px;left:-40px;background:rgba(232,180,184,0.15);animation-delay:-4s;}
 @keyframes orbPulse{0%,100%{transform:scale(1);opacity:0.6}50%{transform:scale(1.18);opacity:0.95}}
 
 .card-icon-box{
   width:52px;height:52px;border-radius:14px;
   display:flex;align-items:center;justify-content:center;
   font-size:1.5rem;margin-bottom:16px;
-  position:relative;z-index:2;border:1px solid rgba(255,255,255,0.1);
+  position:relative;z-index:2;border:1px solid rgba(60,40,100,0.1);
 }
-.icon-v{background:rgba(108,74,158,0.32);}
-.icon-t{background:rgba(42,157,143,0.3);}
-.icon-r{background:rgba(232,180,184,0.18);}
+.icon-v{background:rgba(108,74,158,0.15);}
+.icon-t{background:rgba(42,157,143,0.15);}
+.icon-r{background:rgba(196,122,128,0.15);}
 
-.card-num{font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;position:relative;z-index:2;opacity:0.5;}
-.num-v{color:#9b72d0} .num-t{color:#52c4b5} .num-r{color:#e8b4b8}
-.card-title{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:600;color:#f7f3ec;line-height:1.05;margin-bottom:11px;position:relative;z-index:2;}
-.card-desc{font-size:0.83rem;font-weight:300;line-height:1.66;position:relative;z-index:2;margin-bottom:20px;}
-.desc-v{color:rgba(155,114,208,0.88)} .desc-t{color:rgba(82,196,181,0.88)} .desc-r{color:rgba(232,180,184,0.82)}
+.card-num{font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;position:relative;z-index:2;opacity:0.55;}
+.num-v{color:#6c4a9e} .num-t{color:#2a9d8f} .num-r{color:#c47a80}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:600;color:#1a1625;line-height:1.05;margin-bottom:11px;position:relative;z-index:2;}
+.card-desc{font-size:0.83rem;font-weight:400;line-height:1.66;position:relative;z-index:2;margin-bottom:20px;}
+.desc-v{color:rgba(80,50,140,0.75)} .desc-t{color:rgba(30,100,90,0.75)} .desc-r{color:rgba(150,60,80,0.75)}
 .card-pills{display:flex;flex-direction:column;gap:7px;margin-bottom:22px;position:relative;z-index:2;}
-.card-pill{display:flex;align-items:center;gap:9px;font-size:0.79rem;color:rgba(247,243,236,0.38);}
+.card-pill{display:flex;align-items:center;gap:9px;font-size:0.79rem;color:rgba(26,22,37,0.45);}
 .pill-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
-.dot-v{background:#9b72d0} .dot-t{background:#52c4b5} .dot-r{background:#e8b4b8}
+.dot-v{background:#9b72d0} .dot-t{background:#2a9d8f} .dot-r{background:#c47a80}
 .card-cta{display:inline-flex;align-items:center;gap:8px;font-size:0.84rem;font-weight:500;padding:9px 18px;border-radius:100px;border:1px solid;width:fit-content;position:relative;z-index:2;transition:all 0.3s ease;}
-.cta-v{color:#9b72d0;border-color:rgba(155,114,208,0.38);background:rgba(108,74,158,0.12);}
-.cta-t{color:#52c4b5;border-color:rgba(82,196,181,0.38);background:rgba(42,157,143,0.1);}
-.cta-r{color:#e8b4b8;border-color:rgba(232,180,184,0.32);background:rgba(232,180,184,0.08);}
-.feat-card:hover .cta-v{background:rgba(108,74,158,0.28);border-color:#9b72d0;}
-.feat-card:hover .cta-t{background:rgba(42,157,143,0.25);border-color:#52c4b5;}
-.feat-card:hover .cta-r{background:rgba(232,180,184,0.2);border-color:#e8b4b8;}
+.cta-v{color:#6c4a9e;border-color:rgba(108,74,158,0.28);background:rgba(108,74,158,0.07);}
+.cta-t{color:#2a9d8f;border-color:rgba(42,157,143,0.28);background:rgba(42,157,143,0.07);}
+.cta-r{color:#c47a80;border-color:rgba(196,122,128,0.28);background:rgba(196,122,128,0.07);}
+.feat-card:hover .cta-v{background:rgba(108,74,158,0.15);border-color:#9b72d0;}
+.feat-card:hover .cta-t{background:rgba(42,157,143,0.15);border-color:#2a9d8f;}
+.feat-card:hover .cta-r{background:rgba(196,122,128,0.15);border-color:#c47a80;}
 .lp-btn {
     display: flex;
     justify-content: center;
@@ -463,10 +467,10 @@ details > summary {
     padding: 0.95rem 2.4rem;
     font-size: 1.08rem;
     font-weight: 600;
-    color: #ffffff;
+    color: #1a1625;
     border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(20, 25, 35, 0.45);
+    border: 1px solid rgba(60,40,100,0.16);
+    background: rgba(255,255,255,0.75);
     backdrop-filter: blur(18px);
     overflow: hidden;
     z-index: 1;
@@ -481,10 +485,10 @@ details > summary {
     border-radius: 16px;
     background: linear-gradient(
         120deg,
-        rgba(0,255,170,0.35),
-        rgba(0,140,255,0.35),
-        rgba(255,60,60,0.35),
-        rgba(0,255,170,0.35)
+        rgba(0,180,120,0.18),
+        rgba(0,100,255,0.18),
+        rgba(200,60,60,0.18),
+        rgba(0,180,120,0.18)
     );
     background-size: 300% 300%;
     animation: rgbFlow 8s ease infinite;
@@ -498,7 +502,7 @@ details > summary {
     inset: 0;
     border-radius: 16px;
     background: radial-gradient(circle at 50% 50%,
-        rgba(255,255,255,0.15),
+        rgba(255,255,255,0.4),
         transparent 70%);
 }
 
@@ -506,9 +510,9 @@ details > summary {
 .stButton > button:hover {
     transform: translateY(-3px) scale(1.04);
     box-shadow:
-        0 0 25px rgba(0,255,170,0.35),
-        0 0 45px rgba(0,140,255,0.35),
-        0 0 65px rgba(255,60,60,0.25);
+        0 0 20px rgba(0,180,120,0.22),
+        0 0 38px rgba(0,100,255,0.18),
+        0 0 55px rgba(200,60,60,0.14);
 }
 
 @keyframes rgbFlow {
@@ -518,24 +522,24 @@ details > summary {
 }
 
 /* Stats */
-.stats-wrap{display:flex;justify-content:center;gap:54px;padding:26px 0;border-top:1px solid rgba(255,255,255,0.05);max-width:600px;margin:0 auto;position:relative;z-index:2;}
-.stat-n{font-family:'Cormorant Garamond',serif;font-size:2.1rem;font-weight:600;background:linear-gradient(135deg,#e8cc7e,#f7f3ec);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;line-height:1;margin-bottom:5px;}
-.stat-l{color:rgba(247,243,236,0.27);font-size:0.69rem;letter-spacing:1.5px;text-transform:uppercase;font-family:'Space Mono',monospace;text-align:center;}
+.stats-wrap{display:flex;justify-content:center;gap:54px;padding:26px 0;border-top:1px solid rgba(60,40,100,0.08);max-width:600px;margin:0 auto;position:relative;z-index:2;}
+.stat-n{font-family:'Cormorant Garamond',serif;font-size:2.1rem;font-weight:600;background:linear-gradient(135deg,#a87c2a,#6c4a9e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;line-height:1;margin-bottom:5px;}
+.stat-l{color:rgba(26,22,37,0.32);font-size:0.69rem;letter-spacing:1.5px;text-transform:uppercase;font-family:'Space Mono',monospace;text-align:center;}
 
-.fp-header{display:flex;align-items:center;gap:15px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06);position:relative;z-index:2;}
+.fp-header{display:flex;align-items:center;gap:15px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid rgba(60,40,100,0.08);position:relative;z-index:2;}
 .fp-icon{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.45rem;flex-shrink:0;}
-.fp-title{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:600;color:#f7f3ec;}
-.fp-sub{color:rgba(247,243,236,0.3);font-size:0.82rem;margin-top:2px;}
-.panel{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:17px;padding:26px;margin-bottom:16px;position:relative;z-index:2;}
-.msg-ok{background:rgba(42,157,143,0.14);border:1px solid rgba(42,157,143,0.28);color:#52c4b5;padding:11px 17px;border-radius:11px;font-size:0.87rem;font-weight:500;margin:10px 0;}
-.msg-warn{background:rgba(201,168,76,0.11);border:1px solid rgba(201,168,76,0.28);color:#e8cc7e;padding:11px 17px;border-radius:11px;font-size:0.87rem;font-weight:500;margin:10px 0;}
-.email-item{background:rgba(255,255,255,0.028);border:1px solid rgba(255,255,255,0.07);border-left:3px solid #2a9d8f;border-radius:11px;padding:13px 17px;margin:9px 0;color:rgba(247,243,236,0.7);font-size:0.87rem;transition:all 0.2s ease;font-family:'DM Sans',sans-serif;}
+.fp-title{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:600;color:#1a1625;}
+.fp-sub{color:rgba(26,22,37,0.38);font-size:0.82rem;margin-top:2px;}
+.panel{background:rgba(255,255,255,0.65);border:1px solid rgba(60,40,100,0.1);border-radius:17px;padding:26px;margin-bottom:16px;position:relative;z-index:2;box-shadow:0 2px 16px rgba(60,40,100,0.06);}
+.msg-ok{background:rgba(42,157,143,0.1);border:1px solid rgba(42,157,143,0.28);color:#1b7a6e;padding:11px 17px;border-radius:11px;font-size:0.87rem;font-weight:500;margin:10px 0;}
+.msg-warn{background:rgba(168,124,42,0.09);border:1px solid rgba(168,124,42,0.25);color:#8a6020;padding:11px 17px;border-radius:11px;font-size:0.87rem;font-weight:500;margin:10px 0;}
+.email-item{background:rgba(255,255,255,0.75);border:1px solid rgba(60,40,100,0.1);border-left:3px solid #2a9d8f;border-radius:11px;padding:13px 17px;margin:9px 0;color:rgba(26,22,37,0.7);font-size:0.87rem;transition:all 0.2s ease;font-family:'DM Sans',sans-serif;box-shadow:0 1px 6px rgba(60,40,100,0.06);}
 [data-testid="stToast"]{
-    background: #b91c1c !important;
-    color: #3b82f6 !important;
+    background: #fef2f2 !important;
+    color: #1d4ed8 !important;
     border-radius: 12px !important;
-    border: 1px solid #1e3a8a !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    border: 1px solid #dbeafe !important;
+    box-shadow: 0 10px 30px rgba(60,40,100,0.12);
     font-weight: 500;
     padding: 14px 18px;
 }
@@ -560,12 +564,12 @@ details > summary {
     padding: 0 !important;
 }
 [data-testid="stToast"] svg{
-    fill: #3b82f6 !important;
+    fill: #1d4ed8 !important;
 }
 /* Footer */
-.foot{text-align:center;padding:16px 0 8px;border-top:1px solid rgba(255,255,255,0.04);color:rgba(247,243,236,0.17);font-family:'Space Mono',monospace;font-size:0.67rem;letter-spacing:1px;position:relative;z-index:2;}
+.foot{text-align:center;padding:16px 0 8px;border-top:1px solid rgba(60,40,100,0.07);color:rgba(26,22,37,0.28);font-family:'Space Mono',monospace;font-size:0.67rem;letter-spacing:1px;position:relative;z-index:2;}
 .stTextInput > div > div > input {
-    color: #e8cc7e !important;
+    color: #a87c2a !important;
 }
 /* Animations */
 @keyframes fadeup{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
@@ -583,7 +587,6 @@ st.markdown("""
 <div class="bg-noise"></div>
 """, unsafe_allow_html=True)
 
-# ── SESSION STATE DEFAULTS ──
 defaults = {
     "user": None,
     "page": "landing",
@@ -601,10 +604,6 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ── HANDLE OAUTH REDIRECT: ?user=email ──
-# After Google OAuth, Flask redirects here with ?user=email
-# Store the email and immediately set it as the auth header so all
-# subsequent backend calls are authenticated.
 if "user" in st.query_params:
     user_val = st.query_params["user"]
     if isinstance(user_val, list):
@@ -612,17 +611,15 @@ if "user" in st.query_params:
     st.session_state.user = user_val
     st.session_state.page = "home"
     st.query_params.clear()
-    update_backend_auth(user_val)  # ⭐ set X-User-Email header immediately
+    update_backend_auth(user_val)  
     st.rerun()
 
-# ── HANDLE NAV PARAM ──
 if "nav" in st.query_params:
     st.session_state.page = st.query_params["nav"]
     st.query_params.clear()
     st.rerun()
 
 
-# ── HELPER: safe API list fetch ──
 def _show_access_request():
     """Show Gmail access request UI (called on 403 oauth_not_granted)."""
     st.markdown("""
@@ -688,7 +685,6 @@ def safe_fetch_list(res):
     st.warning(f"⚠ Unexpected response: {data}")
     return []
 
-# ── LANDING (unauthenticated) ──
 if not st.session_state.user:
     _, col, _ = st.columns([1, 2.5, 1])
     with col:
@@ -740,7 +736,6 @@ if not st.session_state.user:
 
     st.stop()
 
-# ── SIGNED-IN AREA ──
 
 if not st.session_state.login_toast:
     st.toast("✦ Signed in!", icon="💌")
@@ -774,20 +769,8 @@ with n4:
     if st.button("↩ Reply", key="nav_reply"): st.session_state.page = "reply"; st.rerun()
 st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
 
-# ── TEMPORARY DEBUG BAR (remove after confirming auth works) ──
-with st.expander("🔧 Debug Auth", expanded=False):
-    st.code(f"User in state: {st.session_state.get('user')}")
-    st.code(f"Header set: {backend.headers.get('X-User-Email')}")
-    if st.button("Check /debug endpoint", key="dbg_check"):
-        try:
-            r = backend.get(f"{BACKEND_URL}/debug")
-            st.json(r.json())
-        except Exception as e:
-            st.error(str(e))
 
-# ════════════════════════════════════════════════════════════
-# HOME
-# ════════════════════════════════════════════════════════════
+
 if st.session_state.page in ("home", "landing"):
     st.markdown(f"""
 <div class="hero-wrap anim-1">
@@ -881,13 +864,10 @@ if st.session_state.page in ("home", "landing"):
 </div>
 """, unsafe_allow_html=True)
 
-# ════════════════════════════════════════════════════════════
-# NEW EMAIL
-# ════════════════════════════════════════════════════════════
 elif st.session_state.page == "new":
     st.markdown("""
 <div class="fp-header anim-1">
-  <div class="fp-icon" style="background:rgba(108,74,158,0.22);border:1px solid rgba(155,114,208,0.3);">✦</div>
+  <div class="fp-icon" style="background:rgba(108,74,158,0.12);border:1px solid rgba(155,114,208,0.25);">✦</div>
   <div>
     <div class="fp-title">Compose New Email</div>
     <div class="fp-sub">Describe your intent — agents do the rest</div>
@@ -976,13 +956,10 @@ elif st.session_state.page == "new":
             except Exception as e:
                 st.error(f"Send error: {e}")
 
-# ════════════════════════════════════════════════════════════
-# INBOX
-# ════════════════════════════════════════════════════════════
 elif st.session_state.page == "inbox":
     st.markdown("""
 <div class="fp-header anim-1">
-  <div class="fp-icon" style="background:rgba(42,157,143,0.2);border:1px solid rgba(82,196,181,0.3);">⟳</div>
+  <div class="fp-icon" style="background:rgba(42,157,143,0.12);border:1px solid rgba(42,157,143,0.25);">⟳</div>
   <div>
     <div class="fp-title">Smart Inbox</div>
     <div class="fp-sub">Browse, preview and reply with AI</div>
@@ -1002,7 +979,6 @@ elif st.session_state.page == "inbox":
                             f"{BACKEND_URL}/search",
                             json={"email": search_email}
                         )
-                        # ✅ SAFE: validate list before storing
                         st.session_state.emails = safe_fetch_list(res)
                     except Exception as e:
                         st.error(f"Request failed: {e}")
@@ -1019,7 +995,6 @@ elif st.session_state.page == "inbox":
                     res = backend.get(
                         f"{BACKEND_URL}/inbox"
                     )
-                    # ✅ SAFE: validate list before storing
                     st.session_state.emails = safe_fetch_list(res)
                 except Exception as e:
                     st.error(f"Request failed: {e}")
@@ -1027,7 +1002,6 @@ elif st.session_state.page == "inbox":
             if st.session_state.emails:
                 st.markdown("<div class='msg-ok'>✦ Inbox loaded</div>", unsafe_allow_html=True)
 
-    # ✅ SAFE: always validate emails before consuming
     emails = st.session_state.get("emails") or []
     if not isinstance(emails, list):
         st.error("Inbox data is invalid. Please reload.")
@@ -1127,13 +1101,10 @@ elif st.session_state.page == "inbox":
     else:
         st.info("Load emails above to get started.")
 
-# ════════════════════════════════════════════════════════════
-# SMART REPLY
-# ════════════════════════════════════════════════════════════
 elif st.session_state.page == "reply":
     st.markdown("""
 <div class="fp-header anim-1">
-  <div class="fp-icon" style="background:rgba(232,180,184,0.15);border:1px solid rgba(232,180,184,0.3);">↩</div>
+  <div class="fp-icon" style="background:rgba(196,122,128,0.12);border:1px solid rgba(196,122,128,0.25);">↩</div>
   <div>
     <div class="fp-title">Smart Reply</div>
     <div class="fp-sub">Fetch any conversation and reply with AI context</div>
@@ -1151,7 +1122,6 @@ elif st.session_state.page == "reply":
                         f"{BACKEND_URL}/search",
                         json={"email": target}
                     )
-                    # ✅ SAFE: validate list before storing
                     st.session_state.emails = safe_fetch_list(res)
                 except Exception as e:
                     st.error(f"Request failed: {e}")
@@ -1161,7 +1131,6 @@ elif st.session_state.page == "reply":
         else:
             st.markdown("<div class='msg-warn'>⚠ Enter an email address first</div>", unsafe_allow_html=True)
 
-    # ✅ SAFE: always validate emails before consuming
     emails = st.session_state.get("emails") or []
     if not isinstance(emails, list):
         st.error("Conversation data is invalid. Please reload.")
@@ -1171,7 +1140,7 @@ elif st.session_state.page == "reply":
         opts = {
             f"{e.get('subject', '(No subject)')} — {e.get('from', 'Unknown')}": e
             for e in emails
-            if isinstance(e, dict)  # guard: skip any non-dict items
+            if isinstance(e, dict) 
         }
         if not opts:
             st.info("No valid emails to display.")
@@ -1261,7 +1230,6 @@ elif st.session_state.page == "reply":
     else:
         st.info("Enter an email address above and fetch conversations.")
 
-# ── FOOTER + LOGOUT ──
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown('<div class="foot">OrchestraMail AI &nbsp;·&nbsp; Multi-Agent Email Intelligence &nbsp;·&nbsp; Built with ♦ and care</div>', unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
@@ -1272,7 +1240,6 @@ with lc:
             backend.get(f"{BACKEND_URL}/logout")
         except:
             pass
-        # Clear the auth header from the session object before wiping state
         backend.headers.pop("X-User-Email", None)
         st.session_state.clear()
         st.rerun()

@@ -75,16 +75,12 @@ def debug():
 def require_login():
     user = request.headers.get("X-User-Email")
     if not user:
-        # No header at all → not logged in
         return None, (jsonify({"error": "Not logged in — X-User-Email header missing"}), 401)
     from backend.token_store import get_user
     if not get_user(user):
-        # Header present but no Gmail token in DB → need to grant OAuth
         return None, (jsonify({"error": "oauth_not_granted", "detail": f"No Gmail token for {user}"}), 403)
     return user, None
 
-
-# ── AUTH ──────────────────────────────────────────────────
 
 @app.route("/login")
 def login():
