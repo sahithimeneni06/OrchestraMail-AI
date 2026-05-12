@@ -7,8 +7,29 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+import streamlit.components.v1 as components
 import os
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
+
+import streamlit.components.v1 as components
+
+adsense_banner = """
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3577844494643301"
+     crossorigin="anonymous"></script>
+<!-- OrchestraMail Banner -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-3577844494643301"
+     data-ad-slot="1284799725"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+"""
+
+components.html(adsense_banner, height=250)
 
 if "backend" not in st.session_state:
     st.session_state.backend = requests.Session()
