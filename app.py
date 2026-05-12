@@ -15,7 +15,7 @@ import streamlit.components.v1 as components
 
 adsense_banner = os.getenv("ADS_SENSE")
 
-components.html(adsense_banner, height=250)
+components.html(adsense_banner, height=0)
 
 if "backend" not in st.session_state:
     st.session_state.backend = requests.Session()
